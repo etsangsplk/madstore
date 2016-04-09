@@ -10,5 +10,10 @@ AC_SUBST([CC])
 [CPPFLAGS="${CPPFLAGS} -I/usr/include/sparsehash -I/usr/include/google"]
 AC_CHECK_HEADER([dense_hash_set], [], [AC_MSG_ERROR([sparsehash headers not found])])
 
+AC_ARG_WITH(store, [  --with-store=STORE      choose store type: vector, hash (default)])
+if test "x${with_store}" = "xvector"; then
+  AC_DEFINE(VECTOR_STORE, 1)
+fi
+
 AC_CONFIG_FILES([Makefile src/lib/Makefile src/madstored/Makefile])
 AC_OUTPUT
