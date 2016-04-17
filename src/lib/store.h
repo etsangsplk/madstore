@@ -13,8 +13,21 @@
 using google::dense_hash_map;
 using namespace std;
 
+template<typename MetricType>
+struct BaseQueryEngine;
+
+template<typename Store>
+struct QueryEngine;
+
+template<typename MetricType>
+struct BaseStore {
+  virtual void Upsert(vector<uint32_t>& dim_indexes, vector<uint32_t>& metric_indexes, vector<string>& fields) = 0;
+  virtual void GetStats(json& stats) = 0;
+  virtual BaseQueryEngine<MetricType>* CreateQueryEngine() = 0;
+};
+
 template<size_t DimsCount,typename MetricType,size_t MetricsCount>
-struct Store {
+struct Store: BaseStore<MetricType> {
 
   using DimCodes = array<uint32_t,DimsCount>;
   using Metrics = MetricsArray<MetricType,MetricsCount>;
@@ -86,6 +99,10 @@ struct Store {
     stats["records_usage_mb"] = records_mem_usage/(1024*1024);
 
     dict.GetStats(stats);
+  }
+
+  BaseQueryEngine<MetricType>* CreateQueryEngine() {
+    return new QueryEngine<Store>(*this);
   }
 };
 

@@ -31,66 +31,32 @@ struct StoreFacade {
   typedef Store<10,MetricType,4> Store_10_4;
 
   StoreSpec &store_spec;
-  Store_1_4* store_1_4;
-  Store_2_4* store_2_4;
-  Store_3_4* store_3_4;
-  Store_4_4* store_4_4;
-  Store_5_4* store_5_4;
-  Store_6_4* store_6_4;
-  Store_7_4* store_7_4;
-  Store_8_4* store_8_4;
-  Store_9_4* store_9_4;
-  Store_10_4* store_10_4;
+  BaseStore<MetricType>* store;
 
-  StoreFacade(StoreSpec& store_spec)
-    :store_spec(store_spec),
-    store_1_4(NULL),store_2_4(NULL),
-    store_3_4(NULL),store_4_4(NULL),
-    store_5_4(NULL),store_6_4(NULL),
-    store_7_4(NULL),store_8_4(NULL),
-    store_9_4(NULL),store_10_4(NULL)
-  {
+  StoreFacade(StoreSpec& store_spec):store_spec(store_spec) {
     assert(("Maximum supported number of dimensions is 10", store_spec.DimsCount() <= 10));
     assert(("Maximum supported number of metrics is 4", store_spec.MetricsCount() <= 4));
 
     switch(store_spec.DimsCount()) {
-      case 1: store_1_4 = new Store_1_4(store_spec); break;
-      case 2: store_2_4 = new Store_2_4(store_spec); break;
-      case 3: store_3_4 = new Store_3_4(store_spec); break;
-      case 4: store_4_4 = new Store_4_4(store_spec); break;
-      case 5: store_5_4 = new Store_5_4(store_spec); break;
-      case 6: store_6_4 = new Store_6_4(store_spec); break;
-      case 7: store_7_4 = new Store_7_4(store_spec); break;
-      case 8: store_8_4 = new Store_8_4(store_spec); break;
-      case 9: store_9_4 = new Store_9_4(store_spec); break;
-      case 10: store_10_4 = new Store_10_4(store_spec); break;
+      case 1: store = new Store_1_4(store_spec); break;
+      case 2: store = new Store_2_4(store_spec); break;
+      case 3: store = new Store_3_4(store_spec); break;
+      case 4: store = new Store_4_4(store_spec); break;
+      case 5: store = new Store_5_4(store_spec); break;
+      case 6: store = new Store_6_4(store_spec); break;
+      case 7: store = new Store_7_4(store_spec); break;
+      case 8: store = new Store_8_4(store_spec); break;
+      case 9: store = new Store_9_4(store_spec); break;
+      case 10: store = new Store_10_4(store_spec); break;
     }
   }
 
   ~StoreFacade() {
-    if (store_1_4) { delete store_1_4; }
-    else if (store_2_4) { delete store_2_4; }
-    else if (store_3_4) { delete store_3_4; }
-    else if (store_4_4) { delete store_4_4; }
-    else if (store_5_4) { delete store_5_4; }
-    else if (store_6_4) { delete store_6_4; }
-    else if (store_7_4) { delete store_7_4; }
-    else if (store_8_4) { delete store_8_4; }
-    else if (store_9_4) { delete store_9_4; }
-    else if (store_10_4) { delete store_10_4; }
+    delete store;
   }
 
   inline void Upsert(vector<uint32_t>& dim_indexes, vector<uint32_t>& metric_indexes, vector<string>& fields) {
-    if (store_1_4) { store_1_4->Upsert(dim_indexes, metric_indexes, fields); }
-    else if (store_2_4) { store_2_4->Upsert(dim_indexes, metric_indexes, fields); }
-    else if (store_3_4) { store_3_4->Upsert(dim_indexes, metric_indexes, fields); }
-    else if (store_4_4) { store_4_4->Upsert(dim_indexes, metric_indexes, fields); }
-    else if (store_5_4) { store_5_4->Upsert(dim_indexes, metric_indexes, fields); }
-    else if (store_6_4) { store_6_4->Upsert(dim_indexes, metric_indexes, fields); }
-    else if (store_7_4) { store_7_4->Upsert(dim_indexes, metric_indexes, fields); }
-    else if (store_8_4) { store_8_4->Upsert(dim_indexes, metric_indexes, fields); }
-    else if (store_9_4) { store_9_4->Upsert(dim_indexes, metric_indexes, fields); }
-    else if (store_10_4) { store_10_4->Upsert(dim_indexes, metric_indexes, fields); }
+    store->Upsert(dim_indexes, metric_indexes, fields);
   }
 
   void Read(InputSpec& spec) { 
@@ -109,7 +75,7 @@ struct StoreFacade {
       }
     }
 
-    fstream input(spec.filename);
+    fstream input(spec.file);
 
     vector<string> fields(columns_num);
     for (string row; getline(input, row, spec.row_delimiter); ) {
@@ -123,29 +89,13 @@ struct StoreFacade {
   }
 
   void GetStats(json& stats) {
-    if (store_1_4) { store_1_4->GetStats(stats); }
-    else if (store_2_4) { store_2_4->GetStats(stats); }
-    else if (store_3_4) { store_3_4->GetStats(stats); }
-    else if (store_4_4) { store_4_4->GetStats(stats); }
-    else if (store_5_4) { store_5_4->GetStats(stats); }
-    else if (store_6_4) { store_6_4->GetStats(stats); }
-    else if (store_7_4) { store_7_4->GetStats(stats); }
-    else if (store_8_4) { store_8_4->GetStats(stats); }
-    else if (store_9_4) { store_9_4->GetStats(stats); }
-    else if (store_10_4) { store_10_4->GetStats(stats); }
+    store->GetStats(stats);
   }
 
   void RunQuery(json& query_spec, vector<pair<vector<string>,vector<MetricType>>>& result) {
-    if (store_1_4) { QueryEngine<Store_1_4> engine; engine.RunQuery(*store_1_4, query_spec, result); }
-    else if (store_2_4) { QueryEngine<Store_2_4> engine; engine.RunQuery(*store_2_4, query_spec, result); }
-    else if (store_3_4) { QueryEngine<Store_3_4> engine; engine.RunQuery(*store_3_4, query_spec, result); }
-    else if (store_4_4) { QueryEngine<Store_4_4> engine; engine.RunQuery(*store_4_4, query_spec, result); }
-    else if (store_5_4) { QueryEngine<Store_5_4> engine; engine.RunQuery(*store_5_4, query_spec, result); }
-    else if (store_6_4) { QueryEngine<Store_6_4> engine; engine.RunQuery(*store_6_4, query_spec, result); }
-    else if (store_7_4) { QueryEngine<Store_7_4> engine; engine.RunQuery(*store_7_4, query_spec, result); }
-    else if (store_8_4) { QueryEngine<Store_8_4> engine; engine.RunQuery(*store_8_4, query_spec, result); }
-    else if (store_9_4) { QueryEngine<Store_9_4> engine; engine.RunQuery(*store_9_4, query_spec, result); }
-    else if (store_10_4) { QueryEngine<Store_10_4> engine; engine.RunQuery(*store_10_4, query_spec, result); }
+    BaseQueryEngine<MetricType>* query_engine = store->CreateQueryEngine();
+    query_engine->RunQuery(query_spec, result);
+    delete query_engine;
   }
 };
 

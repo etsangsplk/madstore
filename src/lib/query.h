@@ -8,14 +8,22 @@
 
 using namespace std;
 
+template<typename MetricType>
+struct BaseQueryEngine {
+  virtual void RunQuery(json& query_spec, vector<pair<vector<string>,vector<MetricType>>>& result) = 0;
+};
+
 template<typename Store>
-struct QueryEngine {
+struct QueryEngine: BaseQueryEngine<typename Store::MetricType_> {
 
   using DimCodes = typename Store::DimCodes;
   using Metrics = typename Store::Metrics;
   using MetricType = typename Store::MetricType_;
+  using Result = vector<pair<vector<string>,Metrics>>;
 
-  typedef vector<pair<vector<string>,Metrics>> Result;
+  Store& store;
+
+  QueryEngine(Store& store):store(store) {}
 
   struct Filter {
     Store &store;
@@ -209,6 +217,14 @@ struct QueryEngine {
         string column = filter_spec["column"];
         return new EqualsFilter(store, store.spec.GetDimIndex(column), filter_spec["value"]);
       }
+      if (op == "greater") {
+        string column = filter_spec["column"];
+        return new GreaterThanFilter(store, store.spec.GetDimIndex(column), filter_spec["value"]);
+      }
+      if (op == "less") {
+        string column = filter_spec["column"];
+        return new LessThanFilter(store, store.spec.GetDimIndex(column), filter_spec["value"]);
+      }
       if (op == "in") {
         string column = filter_spec["column"];
         return new InFilter(store, store.spec.GetDimIndex(column),
@@ -240,16 +256,16 @@ struct QueryEngine {
     }
   };
 
-  void RunQuery(Store &store, json& query_spec, Result& result) {
+  void RunQuery(json& query_spec, Result& result) {
     QueryBuilder builder(store);
     Query* query = builder.Build(query_spec);
     query->Run(result);
     delete query;
   }
 
-  void RunQuery(Store &store, json& query_spec, vector<pair<vector<string>,vector<MetricType>>>& result) {
+  void RunQuery(json& query_spec, vector<pair<vector<string>,vector<MetricType>>>& result) {
     Result internal_result;
-    RunQuery(store, query_spec, internal_result);
+    RunQuery(query_spec, internal_result);
     for (auto & r : internal_result) {
       result.push_back(
           pair<vector<string>,vector<MetricType>>(

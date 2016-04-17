@@ -8,11 +8,10 @@
 using namespace std;
 
 int main(int argc, char** arv) {
-      //"{\"dimensions\": [{\"name\": \"install_date\", \"type\": \"integer\"},"
   json store_spec_json = json::parse(R"eof(
     {
       "dimensions": [
-        {"name": "install_date"},
+        {"name": "install_date", "type": "integer"},
         {"name": "publisher"},
         {"name": "partner"},
         {"name": "campaign"},
@@ -27,16 +26,22 @@ int main(int argc, char** arv) {
     }
   )eof");
 
-  StoreSpec storeSpec(store_spec_json);
-  StoreFacade store(storeSpec);
+  StoreSpec store_spec(store_spec_json);
+  StoreFacade store(store_spec);
 
-  vector<string> columns {"install_date","publisher","partner","campaign","country", "event_name", "event_count","event_new","revenue"};
+  json input_spec_json = json::parse(R"eof(
+    {
+      "file": "/home/michael/qihoo-inapps.tsv",
+      "columns": ["install_date","publisher","partner","campaign","country", "event_name", "event_count","event_new","revenue"],
+      "format": "tsv"
+    }
+  )eof");
 
-  InputSpec inputSpec("/home/michael/qihoo-inapps.tsv", columns);
+  InputSpec input_spec(input_spec_json);
   cout<<"Loading data into memory..."<<endl;
 
   clock_t begin = clock();
-  store.Read(inputSpec);
+  store.Read(input_spec);
   clock_t end = clock();
   cout<<"Loaded data in "<<double(end - begin) / CLOCKS_PER_SEC<<" secs"<<endl;
   
@@ -54,19 +59,9 @@ int main(int argc, char** arv) {
       "filter": {
         "operator": "and",
         "filters": [
-          {
-            "operator": "in", "column": "country", "values": ["US", "CH"]
-          },
-          {
-            "operator": "or",
-            "filters": [
-              {"operator": "equals", "column": "install_date", "value": "2016-03-01"},
-              {"operator": "equals", "column": "install_date", "value": "2016-03-02"},
-              {"operator": "equals", "column": "install_date", "value": "2016-03-03"},
-              {"operator": "equals", "column": "install_date", "value": "2016-03-04"},
-              {"operator": "equals", "column": "install_date", "value": "2016-03-05"}
-            ]
-          }
+          {"operator": "in", "column": "country", "values": ["US", "CH"]},
+          {"operator": "greater", "column": "install_date", "value": "20160300"},
+          {"operator": "less", "column": "install_date", "value": "20160400"}
         ]
       }
     }

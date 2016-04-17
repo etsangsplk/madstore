@@ -8,10 +8,10 @@ AC_SUBST([CC])
 
 [CPPFLAGS="${CPPFLAGS} -std=c++11"]
 [CPPFLAGS="${CPPFLAGS} -I/usr/include/sparsehash -I/usr/include/google"]
-AC_CHECK_HEADER([dense_hash_set], [], [AC_MSG_ERROR([sparsehash headers not found])])
+AC_CHECK_HEADER([dense_hash_set], [], [AC_MSG_ERROR([sparsehash not found. Run: sudo apt-get install libsparsehash-dev])])
 
-AC_ARG_WITH(store, [  --with-store=STORE      choose store type: vector, hash (default)])
-if test "x${with_store}" = "xvector"; then
+AC_ARG_WITH(store, [  --with-store=STORE      choose store type: vector (default), hash])
+if test "x${with_store}" != "xhash"; then
   AC_DEFINE(VECTOR_STORE, 1)
 fi
 
