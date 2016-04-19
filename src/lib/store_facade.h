@@ -55,6 +55,8 @@ struct StoreFacade {
     delete store;
   }
 
+  StoreFacade(const StoreFacade& that) = delete;
+
   inline void Upsert(vector<uint32_t>& dim_indexes, vector<uint32_t>& metric_indexes, vector<string>& fields) {
     store->Upsert(dim_indexes, metric_indexes, fields);
   }
@@ -77,12 +79,12 @@ struct StoreFacade {
 
     fstream input(spec.file);
 
-    vector<string> fields(columns_num);
     for (string row; getline(input, row, spec.row_delimiter); ) {
       istringstream ss(row);
-      int i = 0;
+      vector<string> fields;
+      fields.reserve(columns_num);
       for (string field; getline(ss, field, spec.field_delimiter); ) {
-        fields[i++] = field;
+        fields.push_back(field);
       }
       Upsert(dim_indexes, metric_indexes, fields);
     }

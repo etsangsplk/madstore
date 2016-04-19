@@ -39,18 +39,6 @@ struct IntVector: vector<uint32_t> {
 template<typename T,typename V>
 struct IterablesMap: dense_hash_map<T,V,IterableHash<T>,Eq<T>> {};
 
-template<typename T, size_t N>
-ostream& operator<<(ostream& o, const array<T,N>& arr) {
-  copy(arr.cbegin(), arr.cend(), ostream_iterator<T>(o, " "));
-  return o;
-}
-
-template<typename T>
-ostream& operator<<(ostream& o, const vector<T>& vec) {
-  copy(vec.begin(), vec.end(), ostream_iterator<T>(o, " "));
-  return o;
-}
-
 using json = nlohmann::json;
 
 #endif /* MAD_TYPES_H */

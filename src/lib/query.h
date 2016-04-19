@@ -240,7 +240,7 @@ struct QueryEngine: BaseQueryEngine<typename Store::MetricType_> {
     QueryBuilder(Store &store): store(store) {}
 
     Query* Build(json& query_spec) {
-      Filter* filter = NULL;
+      Filter* filter = nullptr;
       if (query_spec.find("filter") != query_spec.end()) {
         FilterBuilder filter_builder(store);
         filter = filter_builder.Build(query_spec["filter"]);

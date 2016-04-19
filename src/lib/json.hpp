@@ -198,6 +198,9 @@ class basic_json
           AllocatorType>;
 
   public:
+    // forward declarations
+    template<typename Base> class json_reverse_iterator;
+    class json_pointer;
 
     /////////////////////
     // container types //
@@ -226,9 +229,6 @@ class basic_json
     using pointer = typename std::allocator_traits<allocator_type>::pointer;
     /// the type of an element const pointer
     using const_pointer = typename std::allocator_traits<allocator_type>::const_pointer;
-
-    // forward declaration
-    template<typename Base> class json_reverse_iterator;
 
     /// an iterator for a basic_json container
     class iterator;
@@ -3273,8 +3273,8 @@ class basic_json
 
     @return reference to the element at index @a idx
 
-    @throw std::domain_error if JSON is not an array or null; example: `"cannot
-    use operator[] with string"`
+    @throw std::domain_error if JSON is not an array or null; example:
+    `"cannot use operator[] with string"`
 
     @complexity Constant if @a idx is in the range of the array. Otherwise
     linear in `idx - size()`.
@@ -3593,6 +3593,121 @@ class basic_json
         {
             throw std::domain_error("cannot use operator[] with " + type_name());
         }
+    }
+
+    /*!
+    @brief access specified element via JSON Pointer
+
+    Uses a JSON pointer to retrieve a reference to the respective JSON value.
+    No bound checking is performed. Similar to
+    @ref operator[](const typename object_t::key_type&), `null` values
+    are created in arrays and objects if necessary.
+
+    In particular:
+    - If the JSON pointer points to an object key that does not exist, it
+      is created an filled with a `null` value before a reference to it
+      is returned.
+    - If the JSON pointer points to an array index that does not exist, it
+      is created an filled with a `null` value before a reference to it
+      is returned. All indices between the current maximum and the given
+      index are also filled with `null`.
+    - The special value `-` is treated as a synonym for the index past the
+      end.
+
+    @param[in] ptr  a JSON pointer
+
+    @return reference to the element pointed to by @a ptr
+
+    @complexity Constant.
+
+    @throw std::out_of_range      if the JSON pointer can not be resolved
+    @throw std::domain_error      if an array index begins with '0'
+    @throw std::invalid_argument  if an array index was not a number
+
+    @liveexample{The behavior is shown in the example.,operatorjson_pointer}
+
+    @since version 2.0.0
+    */
+    reference operator[](const json_pointer& ptr)
+    {
+        return ptr.get_unchecked(this);
+    }
+
+    /*!
+    @brief access specified element via JSON Pointer
+
+    Uses a JSON pointer to retrieve a reference to the respective JSON value.
+    No bound checking is performed. The function does not change the JSON
+    value; no `null` values are created. In particular, the the special value
+    `-` yields an exception.
+
+    @param[in] ptr  JSON pointer to the desired element
+
+    @return const reference to the element pointed to by @a ptr
+
+    @complexity Constant.
+
+    @throw std::out_of_range      if the JSON pointer can not be resolved
+    @throw std::domain_error      if an array index begins with '0'
+    @throw std::invalid_argument  if an array index was not a number
+
+    @liveexample{The behavior is shown in the example.,operatorjson_pointer_const}
+
+    @since version 2.0.0
+    */
+    const_reference operator[](const json_pointer& ptr) const
+    {
+        return ptr.get_unchecked(this);
+    }
+
+    /*!
+    @brief access specified element via JSON Pointer
+
+    Returns a reference to the element at with specified JSON pointer @a ptr,
+    with bounds checking.
+
+    @param[in] ptr  JSON pointer to the desired element
+
+    @return reference to the element pointed to by @a ptr
+
+    @complexity Constant.
+
+    @throw std::out_of_range      if the JSON pointer can not be resolved
+    @throw std::domain_error      if an array index begins with '0'
+    @throw std::invalid_argument  if an array index was not a number
+
+    @liveexample{The behavior is shown in the example.,at_json_pointer}
+
+    @since version 2.0.0
+    */
+    reference at(const json_pointer& ptr)
+    {
+        return ptr.get_checked(this);
+    }
+
+    /*!
+    @brief access specified element via JSON Pointer
+
+    Returns a const reference to the element at with specified JSON pointer
+    @a ptr, with bounds checking.
+
+    @param[in] ptr  JSON pointer to the desired element
+
+    @return reference to the element pointed to by @a ptr
+
+    @complexity Constant.
+
+    @throw std::out_of_range      if the JSON pointer can not be resolved
+    @throw std::domain_error      if an array index begins with '0'
+    @throw std::invalid_argument  if an array index was not a number
+
+    @liveexample{The behavior is shown in the example.,at_json_pointer_const}
+
+    @since version 2.0.0
+    */
+    const_reference at(const json_pointer& ptr) const
+    {
+        return ptr.get_checked(this);
     }
 
     /*!
@@ -7000,13 +7115,13 @@ class basic_json
         }
 
         /// return a reference to the value pointed to by the iterator
-        reference operator*()
+        reference operator*() const
         {
             return const_cast<reference>(base_iterator::operator*());
         }
 
         /// dereference the iterator
-        pointer operator->()
+        pointer operator->() const
         {
             return const_cast<pointer>(base_iterator::operator->());
         }
@@ -7416,322 +7531,323 @@ class basic_json
                 {
                     0,   0,   0,   0,   0,   0,   0,   0,
                     0,  32,  32,   0,   0,  32,   0,   0,
-                    64,  64,  64,  64,  64,  64,  64,  64,
-                    64,  64,  64,  64,  64,  64,  64,  64,
-                    96,  64,   0,  64,  64,  64,  64,  64,
-                    64,  64,  64,  64,  64,  64,  64,  64,
+                    128, 128, 128, 128, 128, 128, 128, 128,
+                    128, 128, 128, 128, 128, 128, 128, 128,
+                    160, 128,   0, 128, 128, 128, 128, 128,
+                    128, 128, 128, 128, 128, 128, 128, 128,
                     192, 192, 192, 192, 192, 192, 192, 192,
-                    192, 192,  64,  64,  64,  64,  64,  64,
-                    64,  64,  64,  64,  64,  64,  64,  64,
-                    64,  64,  64,  64,  64,  64,  64,  64,
-                    64,  64,  64,  64,  64,  64,  64,  64,
-                    64,  64,  64,  64,   0,  64,  64,  64,
-                    64,  64,  64,  64,  64,  64,  64,  64,
-                    64,  64,  64,  64,  64,  64,  64,  64,
-                    64,  64,  64,  64,  64,  64,  64,  64,
-                    64,  64,  64,  64,  64,  64,  64,  64,
-                    64,  64,  64,  64,  64,  64,  64,  64,
-                    64,  64,  64,  64,  64,  64,  64,  64,
-                    64,  64,  64,  64,  64,  64,  64,  64,
-                    64,  64,  64,  64,  64,  64,  64,  64,
-                    64,  64,  64,  64,  64,  64,  64,  64,
-                    64,  64,  64,  64,  64,  64,  64,  64,
-                    64,  64,  64,  64,  64,  64,  64,  64,
-                    64,  64,  64,  64,  64,  64,  64,  64,
-                    64,  64,  64,  64,  64,  64,  64,  64,
-                    64,  64,  64,  64,  64,  64,  64,  64,
-                    64,  64,  64,  64,  64,  64,  64,  64,
-                    64,  64,  64,  64,  64,  64,  64,  64,
-                    64,  64,  64,  64,  64,  64,  64,  64,
-                    64,  64,  64,  64,  64,  64,  64,  64,
-                    64,  64,  64,  64,  64,  64,  64,  64,
-                    64,  64,  64,  64,  64,  64,  64,  64,
+                    192, 192, 128, 128, 128, 128, 128, 128,
+                    128, 128, 128, 128, 128, 128, 128, 128,
+                    128, 128, 128, 128, 128, 128, 128, 128,
+                    128, 128, 128, 128, 128, 128, 128, 128,
+                    128, 128, 128, 128,   0, 128, 128, 128,
+                    128, 128, 128, 128, 128, 128, 128, 128,
+                    128, 128, 128, 128, 128, 128, 128, 128,
+                    128, 128, 128, 128, 128, 128, 128, 128,
+                    128, 128, 128, 128, 128, 128, 128, 128,
+                    128, 128, 128, 128, 128, 128, 128, 128,
+                    128, 128, 128, 128, 128, 128, 128, 128,
+                    128, 128, 128, 128, 128, 128, 128, 128,
+                    128, 128, 128, 128, 128, 128, 128, 128,
+                    128, 128, 128, 128, 128, 128, 128, 128,
+                    128, 128, 128, 128, 128, 128, 128, 128,
+                    128, 128, 128, 128, 128, 128, 128, 128,
+                    128, 128, 128, 128, 128, 128, 128, 128,
+                    128, 128, 128, 128, 128, 128, 128, 128,
+                    128, 128, 128, 128, 128, 128, 128, 128,
+                    128, 128, 128, 128, 128, 128, 128, 128,
+                    128, 128, 128, 128, 128, 128, 128, 128,
+                    128, 128, 128, 128, 128, 128, 128, 128,
+                    128, 128, 128, 128, 128, 128, 128, 128,
+                    128, 128, 128, 128, 128, 128, 128, 128,
+                    128, 128, 128, 128, 128, 128, 128, 128,
                 };
                 if ((m_limit - m_cursor) < 5)
                 {
                     yyfill();    // LCOV_EXCL_LINE;
                 }
                 yych = *m_cursor;
-                if (yych <= ':')
+                if (yybm[0 + yych] & 32)
                 {
-                    if (yych <= ' ')
+                    goto basic_json_parser_6;
+                }
+                if (yych <= '\\')
+                {
+                    if (yych <= '-')
                     {
-                        if (yych <= '\n')
+                        if (yych <= '"')
                         {
                             if (yych <= 0x00)
                             {
-                                goto basic_json_parser_28;
+                                goto basic_json_parser_2;
                             }
-                            if (yych <= 0x08)
-                            {
-                                goto basic_json_parser_30;
-                            }
-                            if (yych >= '\n')
+                            if (yych <= '!')
                             {
                                 goto basic_json_parser_4;
                             }
+                            goto basic_json_parser_9;
                         }
                         else
                         {
-                            if (yych == '\r')
+                            if (yych <= '+')
                             {
-                                goto basic_json_parser_2;
+                                goto basic_json_parser_4;
                             }
-                            if (yych <= 0x1F)
+                            if (yych <= ',')
                             {
-                                goto basic_json_parser_30;
+                                goto basic_json_parser_10;
                             }
+                            goto basic_json_parser_12;
                         }
                     }
                     else
                     {
-                        if (yych <= ',')
-                        {
-                            if (yych == '"')
-                            {
-                                goto basic_json_parser_27;
-                            }
-                            if (yych <= '+')
-                            {
-                                goto basic_json_parser_30;
-                            }
-                            goto basic_json_parser_16;
-                        }
-                        else
+                        if (yych <= '9')
                         {
                             if (yych <= '/')
                             {
-                                if (yych <= '-')
-                                {
-                                    goto basic_json_parser_23;
-                                }
-                                goto basic_json_parser_30;
+                                goto basic_json_parser_4;
                             }
-                            else
+                            if (yych <= '0')
                             {
-                                if (yych <= '0')
-                                {
-                                    goto basic_json_parser_24;
-                                }
-                                if (yych <= '9')
-                                {
-                                    goto basic_json_parser_26;
-                                }
-                                goto basic_json_parser_18;
+                                goto basic_json_parser_13;
                             }
+                            goto basic_json_parser_15;
+                        }
+                        else
+                        {
+                            if (yych <= ':')
+                            {
+                                goto basic_json_parser_17;
+                            }
+                            if (yych == '[')
+                            {
+                                goto basic_json_parser_19;
+                            }
+                            goto basic_json_parser_4;
                         }
                     }
                 }
                 else
                 {
-                    if (yych <= 'n')
+                    if (yych <= 't')
                     {
-                        if (yych <= ']')
+                        if (yych <= 'f')
                         {
-                            if (yych == '[')
+                            if (yych <= ']')
                             {
-                                goto basic_json_parser_8;
+                                goto basic_json_parser_21;
                             }
-                            if (yych <= '\\')
+                            if (yych <= 'e')
                             {
-                                goto basic_json_parser_30;
+                                goto basic_json_parser_4;
                             }
-                            goto basic_json_parser_10;
+                            goto basic_json_parser_23;
                         }
                         else
                         {
-                            if (yych == 'f')
+                            if (yych == 'n')
                             {
-                                goto basic_json_parser_22;
+                                goto basic_json_parser_24;
                             }
-                            if (yych <= 'm')
+                            if (yych <= 's')
                             {
-                                goto basic_json_parser_30;
+                                goto basic_json_parser_4;
                             }
-                            goto basic_json_parser_20;
+                            goto basic_json_parser_25;
                         }
                     }
                     else
                     {
-                        if (yych <= '{')
+                        if (yych <= '|')
                         {
-                            if (yych == 't')
+                            if (yych == '{')
                             {
-                                goto basic_json_parser_21;
+                                goto basic_json_parser_26;
                             }
-                            if (yych <= 'z')
-                            {
-                                goto basic_json_parser_30;
-                            }
-                            goto basic_json_parser_12;
+                            goto basic_json_parser_4;
                         }
                         else
                         {
                             if (yych <= '}')
                             {
-                                if (yych <= '|')
-                                {
-                                    goto basic_json_parser_30;
-                                }
-                                goto basic_json_parser_14;
+                                goto basic_json_parser_28;
                             }
-                            else
+                            if (yych == 0xEF)
                             {
-                                if (yych == 0xEF)
-                                {
-                                    goto basic_json_parser_6;
-                                }
                                 goto basic_json_parser_30;
                             }
+                            goto basic_json_parser_4;
                         }
                     }
                 }
 basic_json_parser_2:
                 ++m_cursor;
-                yych = *m_cursor;
-                goto basic_json_parser_5;
-basic_json_parser_3:
                 {
-                    return scan();
+                    return token_type::end_of_input;
                 }
 basic_json_parser_4:
+                ++m_cursor;
+basic_json_parser_5:
+                {
+                    return token_type::parse_error;
+                }
+basic_json_parser_6:
                 ++m_cursor;
                 if (m_limit <= m_cursor)
                 {
                     yyfill();    // LCOV_EXCL_LINE;
                 }
                 yych = *m_cursor;
-basic_json_parser_5:
                 if (yybm[0 + yych] & 32)
                 {
-                    goto basic_json_parser_4;
+                    goto basic_json_parser_6;
                 }
-                goto basic_json_parser_3;
-basic_json_parser_6:
+                {
+                    return scan();
+                }
+basic_json_parser_9:
                 yyaccept = 0;
                 yych = *(m_marker = ++m_cursor);
-                if (yych == 0xBB)
+                if (yych <= 0x0F)
                 {
-                    goto basic_json_parser_64;
+                    goto basic_json_parser_5;
                 }
-basic_json_parser_7:
-                {
-                    return token_type::parse_error;
-                }
-basic_json_parser_8:
-                ++m_cursor;
-                {
-                    return token_type::begin_array;
-                }
+                goto basic_json_parser_32;
 basic_json_parser_10:
-                ++m_cursor;
-                {
-                    return token_type::end_array;
-                }
-basic_json_parser_12:
-                ++m_cursor;
-                {
-                    return token_type::begin_object;
-                }
-basic_json_parser_14:
-                ++m_cursor;
-                {
-                    return token_type::end_object;
-                }
-basic_json_parser_16:
                 ++m_cursor;
                 {
                     return token_type::value_separator;
                 }
-basic_json_parser_18:
-                ++m_cursor;
-                {
-                    return token_type::name_separator;
-                }
-basic_json_parser_20:
-                yyaccept = 0;
-                yych = *(m_marker = ++m_cursor);
-                if (yych == 'u')
-                {
-                    goto basic_json_parser_60;
-                }
-                goto basic_json_parser_7;
-basic_json_parser_21:
-                yyaccept = 0;
-                yych = *(m_marker = ++m_cursor);
-                if (yych == 'r')
-                {
-                    goto basic_json_parser_56;
-                }
-                goto basic_json_parser_7;
-basic_json_parser_22:
-                yyaccept = 0;
-                yych = *(m_marker = ++m_cursor);
-                if (yych == 'a')
-                {
-                    goto basic_json_parser_51;
-                }
-                goto basic_json_parser_7;
-basic_json_parser_23:
+basic_json_parser_12:
                 yych = *++m_cursor;
                 if (yych <= '/')
                 {
-                    goto basic_json_parser_7;
+                    goto basic_json_parser_5;
                 }
                 if (yych <= '0')
                 {
-                    goto basic_json_parser_50;
+                    goto basic_json_parser_13;
                 }
                 if (yych <= '9')
                 {
-                    goto basic_json_parser_41;
+                    goto basic_json_parser_15;
                 }
-                goto basic_json_parser_7;
-basic_json_parser_24:
+                goto basic_json_parser_5;
+basic_json_parser_13:
                 yyaccept = 1;
                 yych = *(m_marker = ++m_cursor);
                 if (yych <= 'D')
                 {
                     if (yych == '.')
                     {
-                        goto basic_json_parser_43;
+                        goto basic_json_parser_37;
                     }
                 }
                 else
                 {
                     if (yych <= 'E')
                     {
-                        goto basic_json_parser_44;
+                        goto basic_json_parser_38;
                     }
                     if (yych == 'e')
                     {
-                        goto basic_json_parser_44;
+                        goto basic_json_parser_38;
                     }
                 }
-basic_json_parser_25:
+basic_json_parser_14:
                 {
                     return token_type::value_number;
                 }
-basic_json_parser_26:
+basic_json_parser_15:
                 yyaccept = 1;
-                yych = *(m_marker = ++m_cursor);
-                goto basic_json_parser_42;
-basic_json_parser_27:
+                m_marker = ++m_cursor;
+                if ((m_limit - m_cursor) < 3)
+                {
+                    yyfill();    // LCOV_EXCL_LINE;
+                }
+                yych = *m_cursor;
+                if (yybm[0 + yych] & 64)
+                {
+                    goto basic_json_parser_15;
+                }
+                if (yych <= 'D')
+                {
+                    if (yych == '.')
+                    {
+                        goto basic_json_parser_37;
+                    }
+                    goto basic_json_parser_14;
+                }
+                else
+                {
+                    if (yych <= 'E')
+                    {
+                        goto basic_json_parser_38;
+                    }
+                    if (yych == 'e')
+                    {
+                        goto basic_json_parser_38;
+                    }
+                    goto basic_json_parser_14;
+                }
+basic_json_parser_17:
+                ++m_cursor;
+                {
+                    return token_type::name_separator;
+                }
+basic_json_parser_19:
+                ++m_cursor;
+                {
+                    return token_type::begin_array;
+                }
+basic_json_parser_21:
+                ++m_cursor;
+                {
+                    return token_type::end_array;
+                }
+basic_json_parser_23:
                 yyaccept = 0;
                 yych = *(m_marker = ++m_cursor);
-                if (yych <= 0x0F)
+                if (yych == 'a')
                 {
-                    goto basic_json_parser_7;
+                    goto basic_json_parser_39;
                 }
-                goto basic_json_parser_32;
+                goto basic_json_parser_5;
+basic_json_parser_24:
+                yyaccept = 0;
+                yych = *(m_marker = ++m_cursor);
+                if (yych == 'u')
+                {
+                    goto basic_json_parser_40;
+                }
+                goto basic_json_parser_5;
+basic_json_parser_25:
+                yyaccept = 0;
+                yych = *(m_marker = ++m_cursor);
+                if (yych == 'r')
+                {
+                    goto basic_json_parser_41;
+                }
+                goto basic_json_parser_5;
+basic_json_parser_26:
+                ++m_cursor;
+                {
+                    return token_type::begin_object;
+                }
 basic_json_parser_28:
                 ++m_cursor;
                 {
-                    return token_type::end_of_input;
+                    return token_type::end_object;
                 }
 basic_json_parser_30:
-                yych = *++m_cursor;
-                goto basic_json_parser_7;
+                yyaccept = 0;
+                yych = *(m_marker = ++m_cursor);
+                if (yych == 0xBB)
+                {
+                    goto basic_json_parser_42;
+                }
+                goto basic_json_parser_5;
 basic_json_parser_31:
                 ++m_cursor;
                 if (m_limit <= m_cursor)
@@ -7740,7 +7856,7 @@ basic_json_parser_31:
                 }
                 yych = *m_cursor;
 basic_json_parser_32:
-                if (yybm[0 + yych] & 64)
+                if (yybm[0 + yych] & 128)
                 {
                     goto basic_json_parser_31;
                 }
@@ -7750,20 +7866,25 @@ basic_json_parser_32:
                 }
                 if (yych <= '"')
                 {
-                    goto basic_json_parser_35;
+                    goto basic_json_parser_34;
                 }
-                goto basic_json_parser_34;
+                goto basic_json_parser_36;
 basic_json_parser_33:
                 m_cursor = m_marker;
                 if (yyaccept == 0)
                 {
-                    goto basic_json_parser_7;
+                    goto basic_json_parser_5;
                 }
                 else
                 {
-                    goto basic_json_parser_25;
+                    goto basic_json_parser_14;
                 }
 basic_json_parser_34:
+                ++m_cursor;
+                {
+                    return token_type::value_string;
+                }
+basic_json_parser_36:
                 ++m_cursor;
                 if (m_limit <= m_cursor)
                 {
@@ -7836,18 +7957,78 @@ basic_json_parser_34:
                             }
                             if (yych <= 'u')
                             {
-                                goto basic_json_parser_37;
+                                goto basic_json_parser_43;
                             }
                             goto basic_json_parser_33;
                         }
                     }
                 }
-basic_json_parser_35:
-                ++m_cursor;
-                {
-                    return token_type::value_string;
-                }
 basic_json_parser_37:
+                yych = *++m_cursor;
+                if (yych <= '/')
+                {
+                    goto basic_json_parser_33;
+                }
+                if (yych <= '9')
+                {
+                    goto basic_json_parser_44;
+                }
+                goto basic_json_parser_33;
+basic_json_parser_38:
+                yych = *++m_cursor;
+                if (yych <= ',')
+                {
+                    if (yych == '+')
+                    {
+                        goto basic_json_parser_46;
+                    }
+                    goto basic_json_parser_33;
+                }
+                else
+                {
+                    if (yych <= '-')
+                    {
+                        goto basic_json_parser_46;
+                    }
+                    if (yych <= '/')
+                    {
+                        goto basic_json_parser_33;
+                    }
+                    if (yych <= '9')
+                    {
+                        goto basic_json_parser_47;
+                    }
+                    goto basic_json_parser_33;
+                }
+basic_json_parser_39:
+                yych = *++m_cursor;
+                if (yych == 'l')
+                {
+                    goto basic_json_parser_49;
+                }
+                goto basic_json_parser_33;
+basic_json_parser_40:
+                yych = *++m_cursor;
+                if (yych == 'l')
+                {
+                    goto basic_json_parser_50;
+                }
+                goto basic_json_parser_33;
+basic_json_parser_41:
+                yych = *++m_cursor;
+                if (yych == 'u')
+                {
+                    goto basic_json_parser_51;
+                }
+                goto basic_json_parser_33;
+basic_json_parser_42:
+                yych = *++m_cursor;
+                if (yych == 0xBF)
+                {
+                    goto basic_json_parser_52;
+                }
+                goto basic_json_parser_33;
+basic_json_parser_43:
                 ++m_cursor;
                 if (m_limit <= m_cursor)
                 {
@@ -7860,27 +8041,113 @@ basic_json_parser_37:
                     {
                         goto basic_json_parser_33;
                     }
-                    if (yych >= ':')
+                    if (yych <= '9')
                     {
-                        goto basic_json_parser_33;
+                        goto basic_json_parser_54;
                     }
+                    goto basic_json_parser_33;
                 }
                 else
                 {
                     if (yych <= 'F')
+                    {
+                        goto basic_json_parser_54;
+                    }
+                    if (yych <= '`')
+                    {
+                        goto basic_json_parser_33;
+                    }
+                    if (yych <= 'f')
+                    {
+                        goto basic_json_parser_54;
+                    }
+                    goto basic_json_parser_33;
+                }
+basic_json_parser_44:
+                yyaccept = 1;
+                m_marker = ++m_cursor;
+                if ((m_limit - m_cursor) < 3)
+                {
+                    yyfill();    // LCOV_EXCL_LINE;
+                }
+                yych = *m_cursor;
+                if (yych <= 'D')
+                {
+                    if (yych <= '/')
+                    {
+                        goto basic_json_parser_14;
+                    }
+                    if (yych <= '9')
+                    {
+                        goto basic_json_parser_44;
+                    }
+                    goto basic_json_parser_14;
+                }
+                else
+                {
+                    if (yych <= 'E')
                     {
                         goto basic_json_parser_38;
                     }
-                    if (yych <= '`')
+                    if (yych == 'e')
                     {
-                        goto basic_json_parser_33;
+                        goto basic_json_parser_38;
                     }
-                    if (yych >= 'g')
-                    {
-                        goto basic_json_parser_33;
-                    }
+                    goto basic_json_parser_14;
                 }
-basic_json_parser_38:
+basic_json_parser_46:
+                yych = *++m_cursor;
+                if (yych <= '/')
+                {
+                    goto basic_json_parser_33;
+                }
+                if (yych >= ':')
+                {
+                    goto basic_json_parser_33;
+                }
+basic_json_parser_47:
+                ++m_cursor;
+                if (m_limit <= m_cursor)
+                {
+                    yyfill();    // LCOV_EXCL_LINE;
+                }
+                yych = *m_cursor;
+                if (yych <= '/')
+                {
+                    goto basic_json_parser_14;
+                }
+                if (yych <= '9')
+                {
+                    goto basic_json_parser_47;
+                }
+                goto basic_json_parser_14;
+basic_json_parser_49:
+                yych = *++m_cursor;
+                if (yych == 's')
+                {
+                    goto basic_json_parser_55;
+                }
+                goto basic_json_parser_33;
+basic_json_parser_50:
+                yych = *++m_cursor;
+                if (yych == 'l')
+                {
+                    goto basic_json_parser_56;
+                }
+                goto basic_json_parser_33;
+basic_json_parser_51:
+                yych = *++m_cursor;
+                if (yych == 'e')
+                {
+                    goto basic_json_parser_58;
+                }
+                goto basic_json_parser_33;
+basic_json_parser_52:
+                ++m_cursor;
+                {
+                    return scan();
+                }
+basic_json_parser_54:
                 ++m_cursor;
                 if (m_limit <= m_cursor)
                 {
@@ -7893,27 +8160,46 @@ basic_json_parser_38:
                     {
                         goto basic_json_parser_33;
                     }
-                    if (yych >= ':')
+                    if (yych <= '9')
                     {
-                        goto basic_json_parser_33;
+                        goto basic_json_parser_60;
                     }
+                    goto basic_json_parser_33;
                 }
                 else
                 {
                     if (yych <= 'F')
                     {
-                        goto basic_json_parser_39;
+                        goto basic_json_parser_60;
                     }
                     if (yych <= '`')
                     {
                         goto basic_json_parser_33;
                     }
-                    if (yych >= 'g')
+                    if (yych <= 'f')
                     {
-                        goto basic_json_parser_33;
+                        goto basic_json_parser_60;
                     }
+                    goto basic_json_parser_33;
                 }
-basic_json_parser_39:
+basic_json_parser_55:
+                yych = *++m_cursor;
+                if (yych == 'e')
+                {
+                    goto basic_json_parser_61;
+                }
+                goto basic_json_parser_33;
+basic_json_parser_56:
+                ++m_cursor;
+                {
+                    return token_type::literal_null;
+                }
+basic_json_parser_58:
+                ++m_cursor;
+                {
+                    return token_type::literal_true;
+                }
+basic_json_parser_60:
                 ++m_cursor;
                 if (m_limit <= m_cursor)
                 {
@@ -7926,27 +8212,34 @@ basic_json_parser_39:
                     {
                         goto basic_json_parser_33;
                     }
-                    if (yych >= ':')
+                    if (yych <= '9')
                     {
-                        goto basic_json_parser_33;
+                        goto basic_json_parser_63;
                     }
+                    goto basic_json_parser_33;
                 }
                 else
                 {
                     if (yych <= 'F')
                     {
-                        goto basic_json_parser_40;
+                        goto basic_json_parser_63;
                     }
                     if (yych <= '`')
                     {
                         goto basic_json_parser_33;
                     }
-                    if (yych >= 'g')
+                    if (yych <= 'f')
                     {
-                        goto basic_json_parser_33;
+                        goto basic_json_parser_63;
                     }
+                    goto basic_json_parser_33;
                 }
-basic_json_parser_40:
+basic_json_parser_61:
+                ++m_cursor;
+                {
+                    return token_type::literal_false;
+                }
+basic_json_parser_63:
                 ++m_cursor;
                 if (m_limit <= m_cursor)
                 {
@@ -7980,215 +8273,6 @@ basic_json_parser_40:
                         goto basic_json_parser_31;
                     }
                     goto basic_json_parser_33;
-                }
-basic_json_parser_41:
-                yyaccept = 1;
-                m_marker = ++m_cursor;
-                if ((m_limit - m_cursor) < 3)
-                {
-                    yyfill();    // LCOV_EXCL_LINE;
-                }
-                yych = *m_cursor;
-basic_json_parser_42:
-                if (yybm[0 + yych] & 128)
-                {
-                    goto basic_json_parser_41;
-                }
-                if (yych <= 'D')
-                {
-                    if (yych != '.')
-                    {
-                        goto basic_json_parser_25;
-                    }
-                }
-                else
-                {
-                    if (yych <= 'E')
-                    {
-                        goto basic_json_parser_44;
-                    }
-                    if (yych == 'e')
-                    {
-                        goto basic_json_parser_44;
-                    }
-                    goto basic_json_parser_25;
-                }
-basic_json_parser_43:
-                yych = *++m_cursor;
-                if (yych <= '/')
-                {
-                    goto basic_json_parser_33;
-                }
-                if (yych <= '9')
-                {
-                    goto basic_json_parser_48;
-                }
-                goto basic_json_parser_33;
-basic_json_parser_44:
-                yych = *++m_cursor;
-                if (yych <= ',')
-                {
-                    if (yych != '+')
-                    {
-                        goto basic_json_parser_33;
-                    }
-                }
-                else
-                {
-                    if (yych <= '-')
-                    {
-                        goto basic_json_parser_45;
-                    }
-                    if (yych <= '/')
-                    {
-                        goto basic_json_parser_33;
-                    }
-                    if (yych <= '9')
-                    {
-                        goto basic_json_parser_46;
-                    }
-                    goto basic_json_parser_33;
-                }
-basic_json_parser_45:
-                yych = *++m_cursor;
-                if (yych <= '/')
-                {
-                    goto basic_json_parser_33;
-                }
-                if (yych >= ':')
-                {
-                    goto basic_json_parser_33;
-                }
-basic_json_parser_46:
-                ++m_cursor;
-                if (m_limit <= m_cursor)
-                {
-                    yyfill();    // LCOV_EXCL_LINE;
-                }
-                yych = *m_cursor;
-                if (yych <= '/')
-                {
-                    goto basic_json_parser_25;
-                }
-                if (yych <= '9')
-                {
-                    goto basic_json_parser_46;
-                }
-                goto basic_json_parser_25;
-basic_json_parser_48:
-                yyaccept = 1;
-                m_marker = ++m_cursor;
-                if ((m_limit - m_cursor) < 3)
-                {
-                    yyfill();    // LCOV_EXCL_LINE;
-                }
-                yych = *m_cursor;
-                if (yych <= 'D')
-                {
-                    if (yych <= '/')
-                    {
-                        goto basic_json_parser_25;
-                    }
-                    if (yych <= '9')
-                    {
-                        goto basic_json_parser_48;
-                    }
-                    goto basic_json_parser_25;
-                }
-                else
-                {
-                    if (yych <= 'E')
-                    {
-                        goto basic_json_parser_44;
-                    }
-                    if (yych == 'e')
-                    {
-                        goto basic_json_parser_44;
-                    }
-                    goto basic_json_parser_25;
-                }
-basic_json_parser_50:
-                yyaccept = 1;
-                yych = *(m_marker = ++m_cursor);
-                if (yych <= 'D')
-                {
-                    if (yych == '.')
-                    {
-                        goto basic_json_parser_43;
-                    }
-                    goto basic_json_parser_25;
-                }
-                else
-                {
-                    if (yych <= 'E')
-                    {
-                        goto basic_json_parser_44;
-                    }
-                    if (yych == 'e')
-                    {
-                        goto basic_json_parser_44;
-                    }
-                    goto basic_json_parser_25;
-                }
-basic_json_parser_51:
-                yych = *++m_cursor;
-                if (yych != 'l')
-                {
-                    goto basic_json_parser_33;
-                }
-                yych = *++m_cursor;
-                if (yych != 's')
-                {
-                    goto basic_json_parser_33;
-                }
-                yych = *++m_cursor;
-                if (yych != 'e')
-                {
-                    goto basic_json_parser_33;
-                }
-                ++m_cursor;
-                {
-                    return token_type::literal_false;
-                }
-basic_json_parser_56:
-                yych = *++m_cursor;
-                if (yych != 'u')
-                {
-                    goto basic_json_parser_33;
-                }
-                yych = *++m_cursor;
-                if (yych != 'e')
-                {
-                    goto basic_json_parser_33;
-                }
-                ++m_cursor;
-                {
-                    return token_type::literal_true;
-                }
-basic_json_parser_60:
-                yych = *++m_cursor;
-                if (yych != 'l')
-                {
-                    goto basic_json_parser_33;
-                }
-                yych = *++m_cursor;
-                if (yych != 'l')
-                {
-                    goto basic_json_parser_33;
-                }
-                ++m_cursor;
-                {
-                    return token_type::literal_null;
-                }
-basic_json_parser_64:
-                yych = *++m_cursor;
-                if (yych != 0xBF)
-                {
-                    goto basic_json_parser_33;
-                }
-                ++m_cursor;
-                {
-                    return scan();
                 }
             }
 
@@ -8844,6 +8928,570 @@ basic_json_parser_64:
         /// the lexer
         lexer m_lexer;
     };
+
+  public:
+    /*!
+    @brief JSON Pointer
+
+    @sa [RFC 6901](https://tools.ietf.org/html/rfc6901)
+
+    @since version 2.0.0
+    */
+    class json_pointer
+    {
+        /// allow basic_json to access private members
+        friend class basic_json;
+
+      public:
+        /*!
+        @brief create JSON pointer
+
+        Create a JSON pointer according to the syntax described in
+        [Section 3 of RFC6901](https://tools.ietf.org/html/rfc6901#section-3).
+
+        @param[in] s  string representing the JSON pointer; if omitted, the
+                      empty string is assumed which references the whole JSON
+                      value
+
+        @throw std::domain_error if reference token is nonempty and does not
+        begin with a slash (`/`); example: `"JSON pointer must be empty or
+        begin with /"`
+        @throw std::domain_error if a tilde (`~`) is not followed by `0`
+        (representing `~`) or `1` (representing `/`); example: `"escape error:
+        ~ must be followed with 0 or 1"`
+
+        @liveexample{The example shows the construction several valid JSON
+        pointers as well as the exceptional behavior.,json_pointer}
+
+        @since version 2.0.0
+        */
+        explicit json_pointer(const std::string& s = "")
+            : reference_tokens(split(s))
+        {}
+
+      private:
+        /*!
+        @brief create and return a reference to the pointed to value
+        */
+        reference get_and_create(reference j) const
+        {
+            pointer result = &j;
+
+            // in case no reference tokens exist, return a reference to the
+            // JSON value j which will be overwritten by a primitive value
+            for (const auto& reference_token : reference_tokens)
+            {
+                switch (result->m_type)
+                {
+                    case value_t::null:
+                    {
+                        if (reference_token == "0")
+                        {
+                            // start a new array if reference token is 0
+                            result = &result->operator[](0);
+                        }
+                        else
+                        {
+                            // start a new object otherwise
+                            result = &result->operator[](reference_token);
+                        }
+                        break;
+                    }
+
+                    case value_t::object:
+                    {
+                        // create an entry in the object
+                        result = &result->operator[](reference_token);
+                        break;
+                    }
+
+                    case value_t::array:
+                    {
+                        // create an entry in the array
+                        result = &result->operator[](static_cast<size_t>(std::stoi(reference_token)));
+                        break;
+                    }
+
+                    /*
+                    The following code is only reached if there exists a
+                    reference token _and_ the current value is primitive. In
+                    this case, we have an error situation, because primitive
+                    values may only occur as single value; that is, with an
+                    empty list of reference tokens.
+                    */
+                    default:
+                    {
+                        throw std::domain_error("invalid value to unflatten");
+                    }
+                }
+            }
+
+            return *result;
+        }
+
+        /*!
+        @brief return a reference to the pointed to value
+
+        @param[in] ptr  a JSON value
+
+        @return reference to the JSON value pointed to by the JSON pointer
+
+        @complexity Linear in the length of the JSON pointer.
+
+        @throw std::out_of_range      if the JSON pointer can not be resolved
+        @throw std::domain_error      if an array index begins with '0'
+        @throw std::invalid_argument  if an array index was not a number
+        */
+        reference get_unchecked(pointer ptr) const
+        {
+            for (const auto& reference_token : reference_tokens)
+            {
+                switch (ptr->m_type)
+                {
+                    case value_t::object:
+                    {
+                        // use unchecked object access
+                        ptr = &ptr->operator[](reference_token);
+                        break;
+                    }
+
+                    case value_t::array:
+                    {
+                        // error condition (cf. RFC 6901, Sect. 4)
+                        if (reference_token.size() > 1 and reference_token[0] == '0')
+                        {
+                            throw std::domain_error("array index must not begin with '0'");
+                        }
+
+                        if (reference_token == "-")
+                        {
+                            // explicityly treat "-" as index beyond the end
+                            ptr = &ptr->operator[](ptr->m_value.array->size());
+                        }
+                        else
+                        {
+                            // convert array index to number; unchecked access
+                            ptr = &ptr->operator[](static_cast<size_t>(std::stoi(reference_token)));
+                        }
+                        break;
+                    }
+
+                    default:
+                    {
+                        throw std::out_of_range("unresolved reference token '" + reference_token + "'");
+                    }
+                }
+            }
+
+            return *ptr;
+        }
+
+        reference get_checked(pointer ptr) const
+        {
+            for (const auto& reference_token : reference_tokens)
+            {
+                switch (ptr->m_type)
+                {
+                    case value_t::object:
+                    {
+                        // note: at performs range check
+                        ptr = &ptr->at(reference_token);
+                        break;
+                    }
+
+                    case value_t::array:
+                    {
+                        if (reference_token == "-")
+                        {
+                            // "-" always fails the range check
+                            throw std::out_of_range("array index '-' (" +
+                                                    std::to_string(ptr->m_value.array->size()) +
+                                                    ") is out of range");
+                        }
+
+                        // error condition (cf. RFC 6901, Sect. 4)
+                        if (reference_token.size() > 1 and reference_token[0] == '0')
+                        {
+                            throw std::domain_error("array index must not begin with '0'");
+                        }
+
+                        // note: at performs range check
+                        ptr = &ptr->at(static_cast<size_t>(std::stoi(reference_token)));
+                        break;
+                    }
+
+                    default:
+                    {
+                        throw std::out_of_range("unresolved reference token '" + reference_token + "'");
+                    }
+                }
+            }
+
+            return *ptr;
+        }
+
+        /*!
+        @brief return a const reference to the pointed to value
+
+        @param[in] ptr  a JSON value
+
+        @return const reference to the JSON value pointed to by the JSON
+                pointer
+        */
+        const_reference get_unchecked(const_pointer ptr) const
+        {
+            for (const auto& reference_token : reference_tokens)
+            {
+                switch (ptr->m_type)
+                {
+                    case value_t::object:
+                    {
+                        // use unchecked object access
+                        ptr = &ptr->operator[](reference_token);
+                        break;
+                    }
+
+                    case value_t::array:
+                    {
+                        if (reference_token == "-")
+                        {
+                            // "-" cannot be used for const access
+                            throw std::out_of_range("array index '-' (" +
+                                                    std::to_string(ptr->m_value.array->size()) +
+                                                    ") is out of range");
+                        }
+
+                        // error condition (cf. RFC 6901, Sect. 4)
+                        if (reference_token.size() > 1 and reference_token[0] == '0')
+                        {
+                            throw std::domain_error("array index must not begin with '0'");
+                        }
+
+                        // use unchecked array access
+                        ptr = &ptr->operator[](static_cast<size_t>(std::stoi(reference_token)));
+                        break;
+                    }
+
+                    default:
+                    {
+                        throw std::out_of_range("unresolved reference token '" + reference_token + "'");
+                    }
+                }
+            }
+
+            return *ptr;
+        }
+
+        const_reference get_checked(const_pointer ptr) const
+        {
+            for (const auto& reference_token : reference_tokens)
+            {
+                switch (ptr->m_type)
+                {
+                    case value_t::object:
+                    {
+                        // note: at performs range check
+                        ptr = &ptr->at(reference_token);
+                        break;
+                    }
+
+                    case value_t::array:
+                    {
+                        if (reference_token == "-")
+                        {
+                            // "-" always fails the range check
+                            throw std::out_of_range("array index '-' (" +
+                                                    std::to_string(ptr->m_value.array->size()) +
+                                                    ") is out of range");
+                        }
+
+                        // error condition (cf. RFC 6901, Sect. 4)
+                        if (reference_token.size() > 1 and reference_token[0] == '0')
+                        {
+                            throw std::domain_error("array index must not begin with '0'");
+                        }
+
+                        // note: at performs range check
+                        ptr = &ptr->at(static_cast<size_t>(std::stoi(reference_token)));
+                        break;
+                    }
+
+                    default:
+                    {
+                        throw std::out_of_range("unresolved reference token '" + reference_token + "'");
+                    }
+                }
+            }
+
+            return *ptr;
+        }
+
+        /// split the string input to reference tokens
+        static std::vector<std::string> split(std::string reference_string)
+        {
+            std::vector<std::string> result;
+
+            // special case: empty reference string -> no reference tokens
+            if (reference_string.empty())
+            {
+                return result;
+            }
+
+            // check if nonempty reference string begins with slash
+            if (reference_string[0] != '/')
+            {
+                throw std::domain_error("JSON pointer must be empty or begin with '/'");
+            }
+
+            // extract the reference tokens:
+            // - slash: position of the last read slash (or end of string)
+            // - start: position after the previous slash
+            for (
+                // search for the first slash after the first character
+                size_t slash = reference_string.find_first_of("/", 1),
+                // set the beginning of the first reference token
+                start = 1;
+                // we can stop if start == string::npos+1 = 0
+                start != 0;
+                // set the beginning of the next reference token
+                // (will eventually be 0 if slash == std::string::npos)
+                start = slash + 1,
+                // find next slash
+                slash = reference_string.find_first_of("/", start))
+            {
+                // use the text between the beginning of the reference token
+                // (start) and the last slash (slash).
+                auto reference_token = reference_string.substr(start, slash - start);
+
+                // check reference tokens are properly escaped
+                for (size_t pos = reference_token.find_first_of("~");
+                        pos != std::string::npos;
+                        pos = reference_token.find_first_of("~", pos + 1))
+                {
+                    assert(reference_token[pos] == '~');
+
+                    // ~ must be followed by 0 or 1
+                    if (pos == reference_token.size() - 1 or
+                            (reference_token[pos + 1] != '0' and
+                             reference_token[pos + 1] != '1'))
+                    {
+                        throw std::domain_error("escape error: '~' must be followed with '0' or '1'");
+                    }
+                }
+
+                // first transform any occurrence of the sequence '~1' to '/'
+                replace_substring(reference_token, "~1", "/");
+                // then transform any occurrence of the sequence '~0' to '~'
+                replace_substring(reference_token, "~0", "~");
+
+                // finally, store the reference token
+                result.push_back(reference_token);
+            }
+
+            return result;
+        }
+
+      private:
+        /*!
+        @brief replace all occurrences of a substring by another string
+
+        @param[in,out] s  the string to manipulate
+        @param[in]     f  the substring to replace with @a t
+        @param[out]    t  the string to replace @a f
+
+        @return The string @a s where all occurrences of @a f are replaced
+                with @a t.
+
+        @pre The search string @a f must not be empty.
+
+        @since version 2.0.0
+        */
+        static void replace_substring(std::string& s,
+                                      const std::string& f,
+                                      const std::string& t)
+        {
+            assert(not f.empty());
+
+            for (
+                size_t pos = s.find(f);         // find first occurrence of f
+                pos != std::string::npos;       // make sure f was found
+                s.replace(pos, f.size(), t),    // replace with t
+                pos = s.find(f, pos + t.size()) // find next occurrence of f
+            );
+        }
+
+        /*!
+        @param[in] reference_string  the reference string to the current value
+        @param[in] value             the value to consider
+        @param[in,out] result        the result object to insert values to
+
+        @note Empty objects or arrays are flattened to `null`.
+        */
+        static void flatten(const std::string reference_string,
+                            const basic_json& value,
+                            basic_json& result)
+        {
+            switch (value.m_type)
+            {
+                case value_t::array:
+                {
+                    if (value.m_value.array->empty())
+                    {
+                        // flatten empty array as null
+                        result[reference_string] = nullptr;
+                    }
+                    else
+                    {
+                        // iterate array and use index as reference string
+                        for (size_t i = 0; i < value.m_value.array->size(); ++i)
+                        {
+                            flatten(reference_string + "/" + std::to_string(i),
+                                    value.m_value.array->operator[](i), result);
+                        }
+                    }
+                    break;
+                }
+
+                case value_t::object:
+                {
+                    if (value.m_value.object->empty())
+                    {
+                        // flatten empty object as null
+                        result[reference_string] = nullptr;
+                    }
+                    else
+                    {
+                        // iterate object and use keys as reference string
+                        for (const auto& element : *value.m_value.object)
+                        {
+                            // escape "~"" to "~0" and "/" to "~1"
+                            std::string key(element.first);
+                            replace_substring(key, "~", "~0");
+                            replace_substring(key, "/", "~1");
+
+                            flatten(reference_string + "/" + key,
+                                    element.second, result);
+                        }
+                    }
+                    break;
+                }
+
+                default:
+                {
+                    // add primitive value with its reference string
+                    result[reference_string] = value;
+                    break;
+                }
+            }
+        }
+
+        /*!
+        @param[in] value  flattened JSON
+
+        @return unflattened JSON
+        */
+        static basic_json unflatten(const basic_json& value)
+        {
+            if (not value.is_object())
+            {
+                throw std::domain_error("only objects can be unflattened");
+            }
+
+            basic_json result;
+
+            // iterate the JSON object values
+            for (const auto& element : *value.m_value.object)
+            {
+                if (not element.second.is_primitive())
+                {
+                    throw std::domain_error("values in object must be primitive");
+                }
+
+                // assign value to reference pointed to by JSON pointer;
+                // Note that if the JSON pointer is "" (i.e., points to the
+                // whole value), function get_and_create returns a reference
+                // to result itself. An assignment will then create a
+                // primitive value.
+                json_pointer(element.first).get_and_create(result) = element.second;
+            }
+
+            return result;
+        }
+
+      private:
+        /// the reference tokens
+        const std::vector<std::string> reference_tokens {};
+    };
+
+    ////////////////////////////
+    // JSON Pointer functions //
+    ////////////////////////////
+
+    /// @name JSON Pointer functions
+    /// @{
+
+    /*!
+    @brief return flattened JSON value
+
+    The function creates a JSON object whose keys are JSON pointers (see
+    [RFC 6901](https://tools.ietf.org/html/rfc6901)) and whose values are all
+    primitive. The original JSON value can be restored using the
+    @ref unflatten() function.
+
+    @return an object that maps JSON pointers to primitve values
+
+    @note Empty objects and arrays are flattened to `null` and will not be
+          reconstructed correctly by the @ref unflatten() function.
+
+    @complexity Linear in the size the JSON value.
+
+    @liveexample{The following code shows how a JSON object is flattened to an
+    object whose keys consist of JSON pointers.,flatten}
+
+    @sa @ref unflatten() for the reverse function
+
+    @since version 2.0.0
+    */
+    basic_json flatten() const
+    {
+        basic_json result(value_t::object);
+        json_pointer::flatten("", *this, result);
+        return result;
+    }
+
+    /*!
+    @brief unflatten a previously flattened JSON value
+
+    The function restores the arbitrary nesting of a JSON value that has been
+    flattened before using the @ref flatten() function. The JSON value must
+    meet certain constraints:
+    1. The value must be an object.
+    2. The keys must be JSON pointers (see
+       [RFC 6901](https://tools.ietf.org/html/rfc6901))
+    3. The mapped values must be primitive JSON types.
+
+    @return the original JSON from a flattened version
+
+    @note Empty objects and arrays are flattened by @ref flatten() to `null`
+          values and can not unflattened to their original type. Apart from
+          this example, for a JSON value `j`, the following is always true:
+          `j == j.flatten().unflatten()`.
+
+    @complexity Linear in the size the JSON value.
+
+    @liveexample{The following code shows how a flattened JSON object is
+    unflattened into the original nested JSON object.,unflatten}
+
+    @sa @ref flatten() for the reverse function
+
+    @since version 2.0.0
+    */
+    basic_json unflatten() const
+    {
+        return json_pointer::unflatten(*this);
+    }
+
+    /// @}
 };
 
 
@@ -8906,9 +9554,9 @@ struct hash<nlohmann::json>
 /*!
 @brief user-defined string literal for JSON values
 
-This operator implements a user-defined string literal for JSON objects. It can
-be used by adding \p "_json" to a string literal and returns a JSON object if
-no parse error occurred.
+This operator implements a user-defined string literal for JSON objects. It
+can be used by adding \p "_json" to a string literal and returns a JSON object
+if no parse error occurred.
 
 @param[in] s  a string representation of a JSON object
 @return a JSON object
@@ -8918,6 +9566,16 @@ no parse error occurred.
 inline nlohmann::json operator "" _json(const char* s, std::size_t)
 {
     return nlohmann::json::parse(reinterpret_cast<const nlohmann::json::string_t::value_type*>(s));
+}
+
+/*!
+@brief user-defined string literal for JSON pointer
+
+@since version 2.0.0
+*/
+inline nlohmann::json::json_pointer operator "" _json_pointer(const char* s, std::size_t)
+{
+    return nlohmann::json::json_pointer(s);
 }
 
 // restore GCC/clang diagnostic settings
