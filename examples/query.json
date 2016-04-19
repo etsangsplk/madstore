@@ -1,0 +1,12 @@
+{
+  "type": "groupBy",
+  "columns": ["install_date", "publisher", "country"],
+  "filter": {
+    "operator": "and",
+    "filters": [
+      {"operator": "in", "column": "country", "values": ["US", "CH"]},
+      {"operator": "greater", "column": "install_date", "value": "20160300"},
+      {"operator": "less", "column": "install_date", "value": "20160400"}
+    ]
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "dimensions": [
+    {"name": "install_date", "type": "integer"},
+    {"name": "publisher"},
+    {"name": "partner"},
+    {"name": "campaign"},
+    {"name": "country"},
+    {"name": "event_name"}
+  ],
+  "metrics": [
+    {"name": "event_count"},
+    {"name": "event_new"},
+    {"name": "revenue"}
+  ],
+  "port": 5555
+}

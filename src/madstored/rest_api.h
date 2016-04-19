@@ -2,8 +2,8 @@
 #define MAD_HTTP_H
 
 #include <evhttp.h>
-#include "../lib/types.h"
-#include "../lib/store_facade.h"
+#include "../include/types.h"
+#include "../include/store_facade.h"
 
 using namespace std;
 

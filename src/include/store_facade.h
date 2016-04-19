@@ -7,6 +7,7 @@
 #include <map>
 #include "types.h"
 #include "store.h"
+#include "store_factory.h"
 #include "input_spec.h"
 #include "query.h"
 
@@ -19,36 +20,11 @@ struct StoreFacade {
 
   typedef unsigned long MetricType;
 
-  typedef Store<1,MetricType,4> Store_1_4;
-  typedef Store<2,MetricType,4> Store_2_4;
-  typedef Store<3,MetricType,4> Store_3_4;
-  typedef Store<4,MetricType,4> Store_4_4;
-  typedef Store<5,MetricType,4> Store_5_4;
-  typedef Store<6,MetricType,4> Store_6_4;
-  typedef Store<7,MetricType,4> Store_7_4;
-  typedef Store<8,MetricType,4> Store_8_4;
-  typedef Store<9,MetricType,4> Store_9_4;
-  typedef Store<10,MetricType,4> Store_10_4;
-
   StoreSpec &store_spec;
   BaseStore<MetricType>* store;
 
   StoreFacade(StoreSpec& store_spec):store_spec(store_spec) {
-    assert(("Maximum supported number of dimensions is 10", store_spec.DimsCount() <= 10));
-    assert(("Maximum supported number of metrics is 4", store_spec.MetricsCount() <= 4));
-
-    switch(store_spec.DimsCount()) {
-      case 1: store = new Store_1_4(store_spec); break;
-      case 2: store = new Store_2_4(store_spec); break;
-      case 3: store = new Store_3_4(store_spec); break;
-      case 4: store = new Store_4_4(store_spec); break;
-      case 5: store = new Store_5_4(store_spec); break;
-      case 6: store = new Store_6_4(store_spec); break;
-      case 7: store = new Store_7_4(store_spec); break;
-      case 8: store = new Store_8_4(store_spec); break;
-      case 9: store = new Store_9_4(store_spec); break;
-      case 10: store = new Store_10_4(store_spec); break;
-    }
+    store = StoreFactory<MetricType>::Create(store_spec);
   }
 
   ~StoreFacade() {

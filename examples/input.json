@@ -1,0 +1,5 @@
+{
+  "file": "/home/michael/inapps.tsv",
+  "columns": ["install_date","publisher","partner","campaign","country", "event_name", "event_count", "event_new", "revenue"],
+  "format": "tsv"
+}

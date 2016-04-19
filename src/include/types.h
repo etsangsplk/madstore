@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <google/dense_hash_map>
 #include <map>
-#include "json.hpp"
+#include "../3rdparty/json.hpp"
 
 using google::dense_hash_map;
 using namespace std;

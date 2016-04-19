@@ -20,5 +20,5 @@ if test "x${with_store}" != "xhash"; then
   AC_DEFINE(VECTOR_STORE, 1)
 fi
 
-AC_CONFIG_FILES([Makefile src/lib/Makefile src/madstored/Makefile])
+AC_CONFIG_FILES([Makefile src/madstored/Makefile])
 AC_OUTPUT

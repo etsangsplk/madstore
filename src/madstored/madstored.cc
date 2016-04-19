@@ -1,36 +1,19 @@
-#include <iostream>
-#include <ctime>
-#include <thread>
-#include "../lib/types.h"
-#include "../lib/store_facade.h"
-#include "../lib/input_spec.h"
-#include "../lib/query.h"
+#include <fstream>
 #include "rest_api.h"
 
 using namespace std;
 
-int main(int argc, char** arv) {
-  json store_spec_json = json::parse(R"eof(
-    {
-      "dimensions": [
-        {"name": "install_date", "type": "integer"},
-        {"name": "publisher"},
-        {"name": "partner"},
-        {"name": "campaign"},
-        {"name": "country"},
-        {"name": "event_name"}
-      ],
-      "metrics": [
-        {"name": "event_count"},
-        {"name": "event_new"},
-        {"name": "revenue"}
-      ]
-    }
-  )eof");
+int main(int argc, char** argv) {
+  if (argc != 2) {
+    cerr<<"USAGE: "<<argv[0]<<" <store spec file>"<<endl;
+    exit(1);
+  }
 
+  ifstream spec_file(argv[1]);
+  json store_spec_json = json::parse(spec_file);
   StoreSpec store_spec(store_spec_json);
   StoreFacade store(store_spec);
 
-  RestAPI rest_api(5555, store);
+  RestAPI rest_api(store_spec_json["port"], store);
   rest_api.Start();
 }
