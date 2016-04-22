@@ -19,12 +19,13 @@ using namespace std;
 struct StoreFacade {
 
   typedef unsigned long MetricType;
+  typedef uint32_t DimCodeType;
 
   StoreSpec &store_spec;
-  BaseStore<MetricType>* store;
+  BaseStore<DimCodeType, MetricType>* store;
 
   StoreFacade(StoreSpec& store_spec):store_spec(store_spec) {
-    store = StoreFactory<MetricType>::Create(store_spec);
+    store = StoreFactory<DimCodeType, MetricType>::Create(store_spec);
   }
 
   ~StoreFacade() {
@@ -33,16 +34,16 @@ struct StoreFacade {
 
   StoreFacade(const StoreFacade& that) = delete;
 
-  inline void Upsert(vector<uint32_t>& dim_indexes, vector<uint32_t>& metric_indexes, vector<string>& fields) {
+  inline void Upsert(vector<uint8_t>& dim_indexes, vector<uint8_t>& metric_indexes, vector<string>& fields) {
     store->Upsert(dim_indexes, metric_indexes, fields);
   }
 
   void Read(InputSpec& spec) { 
     vector<string>& columns = spec.columns;
-    uint32_t columns_num = columns.size();
-    vector<uint32_t> dim_indexes;
-    vector<uint32_t> metric_indexes;
-    for (int i = 0; i < columns_num; ++i) {
+    uint8_t columns_num = columns.size();
+    vector<uint8_t> dim_indexes;
+    vector<uint8_t> metric_indexes;
+    for (uint8_t i = 0; i < columns_num; ++i) {
       string &column = columns[i];
       if (store_spec.GetDimIndex(column) != -1) {
         dim_indexes.push_back(i);
@@ -52,6 +53,9 @@ struct StoreFacade {
         throw invalid_argument("Unknown column: " + column);
       }
     }
+
+    assert(dim_indexes.size() == store_spec.DimsCount());
+    assert(metric_indexes.size() <= store_spec.MetricsCount());
 
     fstream input(spec.file);
 

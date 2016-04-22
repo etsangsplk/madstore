@@ -17,6 +17,7 @@ template<typename Store>
 struct QueryEngine: BaseQueryEngine<typename Store::MetricType_> {
 
   using DimCodes = typename Store::DimCodes;
+  using DimCodeType = typename Store::DimCodeType_;
   using Metrics = typename Store::Metrics;
   using MetricType = typename Store::MetricType_;
   using Result = vector<pair<vector<string>,Metrics>>;
@@ -47,22 +48,23 @@ struct QueryEngine: BaseQueryEngine<typename Store::MetricType_> {
   };
 
   struct GroupByQuery: Query {
-    vector<uint32_t> column_codes;
+    vector<uint8_t> column_indices;
 
-    GroupByQuery(vector<uint32_t> column_codes, Store& store, Filter* filter):
-      column_codes(column_codes), Query(store, filter) {}
+    GroupByQuery(vector<uint8_t> column_indices, Store& store, Filter* filter):
+      column_indices(column_indices), Query(store, filter) {}
 
     void Run(Result& result) {
-      IterablesMap<IntVector,Metrics> grouped_metrics;
-      uint32_t dims_count = column_codes.size();
-      grouped_metrics.set_empty_key(IntVector());
+      uint8_t dims_count = column_indices.size();
+      IterablesMap<vector<DimCodeType>,Metrics> grouped_metrics;
+      vector<DimCodeType> empty(dims_count, -1);
+      grouped_metrics.set_empty_key(empty);
 
       for(const auto& r : Query::store.records) {
         const DimCodes& row_dims = r.first;
         if (!Query::filter || Query::filter->Apply(row_dims)) {
-          IntVector v(dims_count);
-          for (uint32_t i = 0; i < dims_count; ++i) {
-            v[i] = row_dims[column_codes[i]];
+          vector<DimCodeType> v(dims_count);
+          for (uint8_t i = 0; i < dims_count; ++i) {
+            v[i] = row_dims[column_indices[i]];
           }
           grouped_metrics[v] += r.second;
         }
@@ -72,7 +74,7 @@ struct QueryEngine: BaseQueryEngine<typename Store::MetricType_> {
       for (const auto & r : grouped_metrics) {
         vector<string> v(dims_count);
         for (int i = 0; i < dims_count; ++i) {
-          Query::store.dict.Decode(column_codes[i], r.first[i], v[i]);
+          Query::store.dict.Decode(column_indices[i], r.first[i], v[i]);
         }
         result.push_back(pair<vector<string>,Metrics>(v, r.second));
       }
@@ -80,10 +82,10 @@ struct QueryEngine: BaseQueryEngine<typename Store::MetricType_> {
   };
 
   struct EqualsFilter: Filter {
-    uint32_t dim_index;
-    uint32_t value_code;
+    uint8_t dim_index;
+    DimCodeType value_code;
 
-    EqualsFilter(Store &store, const uint32_t& dim_index, const string& value)
+    EqualsFilter(Store &store, const uint8_t& dim_index, const string& value)
       :Filter(store),dim_index(dim_index) {
       value_code = store.dict.GetCode(dim_index, value);
     }
@@ -96,10 +98,10 @@ struct QueryEngine: BaseQueryEngine<typename Store::MetricType_> {
   };
 
   struct InFilter: Filter {
-    uint32_t dim_index;
-    set<uint32_t> value_codes;
+    uint8_t dim_index;
+    set<DimCodeType> value_codes;
 
-    InFilter(Store &store, const uint32_t& dim_index, const vector<string>& values)
+    InFilter(Store &store, const uint8_t& dim_index, const vector<string>& values)
       :Filter(store),dim_index(dim_index) {
       for (auto & value : values) {
         value_codes.insert(store.dict.GetCode(dim_index, value));
@@ -114,10 +116,10 @@ struct QueryEngine: BaseQueryEngine<typename Store::MetricType_> {
   };
 
   struct GreaterThanFilter: Filter {
-    uint32_t dim_index;
-    uint32_t value_code;
+    uint8_t dim_index;
+    DimCodeType value_code;
 
-    GreaterThanFilter(Store &store, uint32_t dim_index, const string& value)
+    GreaterThanFilter(Store &store, uint8_t dim_index, const string& value)
       :Filter(store),dim_index(dim_index) {
       value_code = stoi(value);
     }
@@ -130,10 +132,10 @@ struct QueryEngine: BaseQueryEngine<typename Store::MetricType_> {
   };
 
   struct LessThanFilter: Filter {
-    uint32_t dim_index;
-    uint32_t value_code;
+    uint8_t dim_index;
+    DimCodeType value_code;
 
-    LessThanFilter(Store &store, uint32_t dim_index, const string& value)
+    LessThanFilter(Store &store, uint8_t dim_index, const string& value)
       :Filter(store),dim_index(dim_index) {
       value_code = stoi(value);
     }
@@ -248,9 +250,9 @@ struct QueryEngine: BaseQueryEngine<typename Store::MetricType_> {
       string type = query_spec["type"];
       if (type == "groupBy") {
         vector<string> columns = query_spec["columns"].get<vector<string>>();
-        vector<uint32_t> column_codes;
-        store.spec.GetDimIndices(columns, column_codes);
-        return new GroupByQuery(column_codes, store, filter);
+        vector<uint8_t> column_indices;
+        store.spec.GetDimIndices(columns, column_indices);
+        return new GroupByQuery(column_indices, store, filter);
       }
       throw invalid_argument("Unknown query type: " + type);
     }

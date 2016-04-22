@@ -37,10 +37,10 @@ struct StoreSpec {
     }
   }
 
-  inline uint32_t DimsCount() { return dims.size(); }
+  inline uint8_t DimsCount() { return dims.size(); }
 
-  inline uint32_t GetDimIndex(string& column) {
-    for (uint32_t i = 0; i < dims.size(); ++i) {
+  inline int GetDimIndex(string& column) {
+    for (int i = 0; i < dims.size(); ++i) {
       if (dims[i].name == column) {
         return i;
       }
@@ -48,15 +48,15 @@ struct StoreSpec {
     return -1;
   }
 
-  inline void GetDimIndices(vector<string>& columns, vector<uint32_t>& indices) {
+  inline void GetDimIndices(vector<string>& columns, vector<uint8_t>& indices) {
     indices.reserve(columns.size());
     for (auto & c : columns) {
       indices.push_back(GetDimIndex(c));
     }
   }
 
-  inline uint32_t GetMetricIndex(string& column) {
-    for (uint32_t i = 0; i < metrics.size(); ++i) {
+  inline int GetMetricIndex(string& column) {
+    for (int i = 0; i < metrics.size(); ++i) {
       if (metrics[i].name == column) {
         return i;
       }
@@ -64,7 +64,7 @@ struct StoreSpec {
     return -1;
   }
 
-  inline uint32_t MetricsCount() { return metrics.size(); }
+  inline uint8_t MetricsCount() { return metrics.size(); }
 };
 
 #endif /* MAD_STORE_SPEC_H */

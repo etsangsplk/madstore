@@ -19,30 +19,31 @@ struct BaseQueryEngine;
 template<typename Store>
 struct QueryEngine;
 
-template<typename MetricType>
+template<typename DimCodeType,typename MetricType>
 struct BaseStore {
-  virtual void Upsert(vector<uint32_t>& dim_indexes, vector<uint32_t>& metric_indexes, vector<string>& fields) = 0;
+  virtual void Upsert(vector<uint8_t>& dim_indexes, vector<uint8_t>& metric_indexes, vector<string>& fields) = 0;
   virtual void GetStats(json& stats) = 0;
   virtual BaseQueryEngine<MetricType>* CreateQueryEngine() = 0;
 };
 
-template<size_t DimsCount,typename MetricType,size_t MetricsCount>
-struct Store: BaseStore<MetricType> {
+template<typename DimCodeType,size_t DimsCount,typename MetricType,size_t MetricsCount>
+struct Store: BaseStore<DimCodeType,MetricType> {
 
-  using DimCodes = array<uint32_t,DimsCount>;
+  using DimCodes = array<DimCodeType,DimsCount>;
   using Metrics = MetricsArray<MetricType,MetricsCount>;
   using MetricType_ = MetricType;
+  using DimCodeType_ = DimCodeType;
 
   StoreSpec& spec;
 
 #ifdef VECTOR_STORE
   vector<pair<DimCodes,Metrics>> records;
-  IterablesMap<DimCodes,uint32_t> record_offsets;
+  IterablesMap<DimCodes,size_t> record_offsets;
 #else
   IterablesMap<DimCodes,Metrics> records;
 #endif
 
-  DimDict<DimsCount> dict;
+  DimDict<DimCodeType,DimsCount> dict;
 
   Store(StoreSpec& spec):spec(spec),dict(spec.dims) {
     DimCodes empty;
@@ -74,11 +75,11 @@ struct Store: BaseStore<MetricType> {
 #endif
   }
 
-  void Upsert(vector<uint32_t>& dim_indexes, vector<uint32_t>& metric_indexes, vector<string>& fields) {
+  void Upsert(vector<uint8_t>& dim_indexes, vector<uint8_t>& metric_indexes, vector<string>& fields) {
     array<string,DimsCount> dims;
-    int dim_idx = 0;
+    size_t dim_idx = 0;
     Metrics metrics = {};
-    int metric_idx = 0; 
+    size_t metric_idx = 0; 
 
     for (auto d : dim_indexes) {
       dims[dim_idx++] = fields[d];
@@ -92,9 +93,9 @@ struct Store: BaseStore<MetricType> {
   void GetStats(json& stats) {
     stats["records"] = to_string(records.size());
 
-    unsigned long records_mem_usage = records.size() * (spec.DimsCount()*sizeof(uint32_t) + spec.MetricsCount()*sizeof(MetricType));
+    unsigned long records_mem_usage = records.size() * (spec.DimsCount()*sizeof(DimCodeType) + spec.MetricsCount()*sizeof(MetricType));
 #ifdef VECTOR_STORE
-    records_mem_usage += record_offsets.size() * (spec.DimsCount()*sizeof(uint32_t) + sizeof(uint32_t));
+    records_mem_usage += record_offsets.size() * (spec.DimsCount()*sizeof(DimCodeType) + sizeof(size_t));
 #endif
     stats["records_usage_mb"] = records_mem_usage/(1024*1024);
 
