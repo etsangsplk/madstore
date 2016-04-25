@@ -57,7 +57,10 @@ struct StoreFacade {
     assert(dim_indexes.size() == store_spec.DimsCount());
     assert(metric_indexes.size() <= store_spec.MetricsCount());
 
-    fstream input(spec.file);
+    ifstream input(spec.file);
+    if (!input.good()) {
+      throw runtime_error("Input file not accessible: " + spec.file);
+    }
 
     for (string row; getline(input, row, spec.row_delimiter); ) {
       istringstream ss(row);

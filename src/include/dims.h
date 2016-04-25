@@ -100,11 +100,12 @@ struct DimDict {
     for (int i = 0; i < DimsCount; ++i) {
       auto & vc = value_to_code[i];
       auto & cv = code_to_value[i];
+      unsigned long vc_size = 0;
       for (auto & c : vc) {
-        mem_usage += c.first.size() + sizeof(DimCodeType);
+        vc_size += c.first.size() + sizeof(DimCodeType);
       }
       // Multiply by dense_hash_map overhead:
-      mem_usage *= 1.78;
+      mem_usage += vc_size * 1.78;
       for (auto & v : cv) {
         mem_usage += v.size();
       }

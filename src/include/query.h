@@ -6,6 +6,14 @@
 #include "types.h"
 #include "store.h"
 
+static inline void prefetch_range(const void *addr, size_t len) {
+#ifdef ARCH_HAS_PREFETCH
+  char *end = addr + len;
+  for (char* cp = addr; cp < end; cp += PREFETCH_STRIDE)
+    __builtin_prefetch(cp, 0, 0)
+#endif
+}
+
 using namespace std;
 
 template<typename MetricType>
@@ -59,7 +67,7 @@ struct QueryEngine: BaseQueryEngine<typename Store::MetricType_> {
       vector<DimCodeType> empty(dims_count, -1);
       grouped_metrics.set_empty_key(empty);
 
-      for(const auto& r : Query::store.records) {
+      for(const auto & r : Query::store.records) {
         const DimCodes& row_dims = r.first;
         if (!Query::filter || Query::filter->Apply(row_dims)) {
           vector<DimCodeType> v(dims_count);
@@ -68,6 +76,7 @@ struct QueryEngine: BaseQueryEngine<typename Store::MetricType_> {
           }
           grouped_metrics[v] += r.second;
         }
+        prefetch_range(&r + sizeof(pair<DimCodes,Metrics>), 10);
       }
 
       // Translate dimensions back to original values:

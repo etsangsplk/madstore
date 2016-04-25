@@ -35,14 +35,8 @@ struct Store: BaseStore<DimCodeType,MetricType> {
   using DimCodeType_ = DimCodeType;
 
   StoreSpec& spec;
-
-#ifdef VECTOR_STORE
   vector<pair<DimCodes,Metrics>> records;
   IterablesMap<DimCodes,size_t> record_offsets;
-#else
-  IterablesMap<DimCodes,Metrics> records;
-#endif
-
   DimDict<DimCodeType,DimsCount> dict;
 
   Store(StoreSpec& spec):spec(spec),dict(spec.dims) {
@@ -50,11 +44,7 @@ struct Store: BaseStore<DimCodeType,MetricType> {
     for (int i = 0; i < DimsCount; ++i) {
       empty[i] = -1;
     }
-#ifdef VECTOR_STORE
     record_offsets.set_empty_key(empty);
-#else
-    records.set_empty_key(empty);
-#endif
   }
 
   Store(const Store& that) = delete;
@@ -62,7 +52,6 @@ struct Store: BaseStore<DimCodeType,MetricType> {
   void Upsert(array<string,DimsCount>& dims, const Metrics& metrics) {
     DimCodes codes;
     dict.Encode(dims, codes);
-#ifdef VECTOR_STORE
     auto it = record_offsets.find(codes);
     if (it == record_offsets.end()) {
       records.push_back(pair<DimCodes,Metrics>(codes, metrics));
@@ -70,9 +59,6 @@ struct Store: BaseStore<DimCodeType,MetricType> {
     } else {
       records[it->second].second += metrics;
     }
-#else
-    records[codes] += metrics;
-#endif
   }
 
   void Upsert(vector<uint8_t>& dim_indexes, vector<uint8_t>& metric_indexes, vector<string>& fields) {
@@ -94,9 +80,7 @@ struct Store: BaseStore<DimCodeType,MetricType> {
     stats["records"] = to_string(records.size());
 
     unsigned long records_mem_usage = records.size() * (spec.DimsCount()*sizeof(DimCodeType) + spec.MetricsCount()*sizeof(MetricType));
-#ifdef VECTOR_STORE
     records_mem_usage += record_offsets.size() * (spec.DimsCount()*sizeof(DimCodeType) + sizeof(size_t));
-#endif
     stats["records_usage_mb"] = records_mem_usage/(1024*1024);
 
     dict.GetStats(stats);
