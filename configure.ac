@@ -7,7 +7,7 @@ AC_LANG([C++])
 AC_PROG_CXX
 AC_SUBST([CC])
 
-[CPPFLAGS="${CPPFLAGS} -std=c++11"]
+[CPPFLAGS="${CPPFLAGS} -std=c++11 -DELPP_NO_DEFAULT_LOG_FILE"]
 [LDFLAGS="${LDFLAGS} -static-libstdc++ -static-libgcc"]
 
 [CPPFLAGS="${CPPFLAGS} -I/usr/include/sparsehash -I/usr/include/google"]

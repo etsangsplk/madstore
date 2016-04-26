@@ -33,9 +33,10 @@ struct Store: BaseStore<DimCodeType,MetricType> {
   using Metrics = MetricsArray<MetricType,MetricsCount>;
   using MetricType_ = MetricType;
   using DimCodeType_ = DimCodeType;
+  using Record = pair<DimCodes,Metrics>;
 
   StoreSpec& spec;
-  vector<pair<DimCodes,Metrics>> records;
+  vector<Record> records;
   IterablesMap<DimCodes,size_t> record_offsets;
   DimDict<DimCodeType,DimsCount> dict;
 
@@ -54,7 +55,7 @@ struct Store: BaseStore<DimCodeType,MetricType> {
     dict.Encode(dims, codes);
     auto it = record_offsets.find(codes);
     if (it == record_offsets.end()) {
-      records.push_back(pair<DimCodes,Metrics>(codes, metrics));
+      records.push_back(Record(codes, metrics));
       record_offsets[codes] = records.size() - 1;
     } else {
       records[it->second].second += metrics;

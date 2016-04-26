@@ -32,10 +32,7 @@ void RestAPI::Handler(evhttp_request* req, void*) {
         json request = json::parse(req_body);
         if (path == "/api/query") {
           vector<pair<vector<string>,vector<unsigned long>>> result;
-          clock_t begin = clock();
           store->RunQuery(request, result);
-          clock_t end = clock();
-          cout<<"Run query in "<<double(end - begin) / CLOCKS_PER_SEC<<" secs"<<endl;
           ostringstream os;
           for (const auto & row : result) {
             for (const auto & v : row.first) {
@@ -56,10 +53,7 @@ void RestAPI::Handler(evhttp_request* req, void*) {
         }
         else if (path == "/api/load") {
           InputSpec input_spec(request);
-          clock_t begin = clock();
           store->Read(input_spec);
-          clock_t end = clock();
-          cout<<"Loaded data in "<<double(end - begin) / CLOCKS_PER_SEC<<" secs"<<endl;
           evhttp_send_reply(req, HTTP_OK, nullptr, nullptr);
         }
         else {

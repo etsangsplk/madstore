@@ -29,6 +29,7 @@ struct QueryEngine: BaseQueryEngine<typename Store::MetricType_> {
   using Metrics = typename Store::Metrics;
   using MetricType = typename Store::MetricType_;
   using Result = vector<pair<vector<string>,Metrics>>;
+  using Record = typename Store::Record;
 
   Store& store;
 
@@ -76,7 +77,7 @@ struct QueryEngine: BaseQueryEngine<typename Store::MetricType_> {
           }
           grouped_metrics[v] += r.second;
         }
-        prefetch_range(&r + sizeof(pair<DimCodes,Metrics>), 10);
+        prefetch_range(&r + sizeof(Record), 10);
       }
 
       // Translate dimensions back to original values:

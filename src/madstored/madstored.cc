@@ -1,5 +1,8 @@
 #include <fstream>
 #include "rest_api.h"
+#include "../3rdparty/easylogging++.h"
+
+INITIALIZE_EASYLOGGINGPP
 
 using namespace std;
 
@@ -8,6 +11,11 @@ int main(int argc, char** argv) {
     cerr<<"USAGE: "<<argv[0]<<" <store spec file>"<<endl;
     exit(1);
   }
+
+  el::Configurations log_conf;
+  log_conf.setToDefault();
+  log_conf.setGlobally(el::ConfigurationType::ToFile, "false");
+  el::Loggers::reconfigureAllLoggers(log_conf);
 
   ifstream spec_file(argv[1]);
   json store_spec_json = json::parse(spec_file);

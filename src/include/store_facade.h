@@ -5,6 +5,7 @@
 #include <sstream>
 #include <fstream>
 #include <map>
+#include "../3rdparty/easylogging++.h"
 #include "types.h"
 #include "store.h"
 #include "store_factory.h"
@@ -39,6 +40,8 @@ struct StoreFacade {
   }
 
   void Read(InputSpec& spec) { 
+    TIMED_FUNC(timerObj);
+
     vector<string>& columns = spec.columns;
     uint8_t columns_num = columns.size();
     vector<uint8_t> dim_indexes;
@@ -78,6 +81,8 @@ struct StoreFacade {
   }
 
   void RunQuery(json& query_spec, vector<pair<vector<string>,vector<MetricType>>>& result) {
+    TIMED_FUNC(timerObj);
+
     BaseQueryEngine<MetricType>* query_engine = store->CreateQueryEngine();
     query_engine->RunQuery(query_spec, result);
     delete query_engine;
