@@ -5,6 +5,7 @@
 #include <sstream>
 #include <ctime>
 #include "rest_api.h"
+#include "../3rdparty/easylogging++.h"
 
 using namespace std;
 
@@ -20,9 +21,11 @@ void RestAPI::Response(evhttp_request* req, const char content_type[], string co
 
 void RestAPI::Handler(evhttp_request* req, void*) {
   try {
+    evhttp_cmd_type method = evhttp_request_get_command(req);
     string path = string(evhttp_request_uri(req));
 
-    if (evhttp_request_get_command(req) == EVHTTP_REQ_POST) {
+    if (method == EVHTTP_REQ_POST) {
+      CLOG(INFO, "RestAPI")<<"Recieved request [POST] "<<path;
       auto* input_buf = evhttp_request_get_input_buffer(req);
       int req_length = evbuffer_get_length(input_buf);
       char req_body[req_length+1] = {0};
@@ -63,7 +66,8 @@ void RestAPI::Handler(evhttp_request* req, void*) {
         evhttp_send_reply(req, HTTP_BADREQUEST, e.what(), nullptr);
       }
     }
-    else if (evhttp_request_get_command(req) == EVHTTP_REQ_GET) {
+    else if (method == EVHTTP_REQ_GET) {
+      CLOG(INFO, "RestAPI")<<"Recieved request [GET] "<<path;
       if (path == "/api/stats") {
         json stats;
         store->GetStats(stats);

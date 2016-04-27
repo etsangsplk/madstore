@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include <vector>
 #include <cstring>
-#include <map>
 #include <google/dense_hash_map>
 #include "types.h"
 
@@ -19,9 +18,10 @@ struct Dim {
 
   ValueType type;
   string name;
+  uint32_t watermark_step;
 
-  Dim(ValueType type, string name)
-    :type(type),name(name) {}
+  Dim(ValueType type, string name, uint32_t watermark_step)
+    :type(type),name(name),watermark_step(watermark_step) {}
 };
 
 /**
@@ -100,15 +100,17 @@ struct DimDict {
     for (int i = 0; i < DimsCount; ++i) {
       auto & vc = value_to_code[i];
       auto & cv = code_to_value[i];
-      unsigned long vc_size = 0;
+      unsigned long vc_usage = vc.size() * sizeof(dense_hash_map<string,DimCodeType>);
       for (auto & c : vc) {
-        vc_size += c.first.size() + sizeof(DimCodeType);
+        vc_usage += c.first.size() + sizeof(DimCodeType);
       }
       // Multiply by dense_hash_map overhead:
-      mem_usage += vc_size * 1.78;
+      mem_usage += vc_usage * 1.78;
+      unsigned long cv_usage = cv.size() * sizeof(string);
       for (auto & v : cv) {
-        mem_usage += v.size();
+        cv_usage += v.size() + sizeof(string);
       }
+      mem_usage += cv_usage;
       stats["cardinality"][dims[i].name] = cv.size();
     }
     stats["dims_usage_mb"] = mem_usage/(1024*1024);

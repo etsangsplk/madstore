@@ -3,8 +3,10 @@
 
 #include <stdexcept>
 #include <set>
+#include <algorithm>
 #include "types.h"
 #include "store.h"
+#include "../3rdparty/easylogging++.h"
 
 static inline void prefetch_range(const void *addr, size_t len) {
 #ifdef ARCH_HAS_PREFETCH
@@ -24,6 +26,8 @@ struct BaseQueryEngine {
 template<typename Store>
 struct QueryEngine: BaseQueryEngine<typename Store::MetricType_> {
 
+  static const size_t DIMS_COUNT = Store::DIMS_COUNT;
+
   using DimCodes = typename Store::DimCodes;
   using DimCodeType = typename Store::DimCodeType_;
   using Metrics = typename Store::Metrics;
@@ -37,8 +41,9 @@ struct QueryEngine: BaseQueryEngine<typename Store::MetricType_> {
 
   struct Filter {
     Store &store;
+    array<DimCodeType,DIMS_COUNT> watermark_vals;
 
-    Filter(Store& store): store(store) {}
+    Filter(Store& store): store(store), watermark_vals({}) {}
     virtual ~Filter() {}
     virtual bool Apply(const DimCodes& dims) const = 0;
   };
@@ -68,7 +73,25 @@ struct QueryEngine: BaseQueryEngine<typename Store::MetricType_> {
       vector<DimCodeType> empty(dims_count, -1);
       grouped_metrics.set_empty_key(empty);
 
-      for(const auto & r : Query::store.records) {
+      size_t start_offset = 0;
+      if (Query::filter) {
+        vector<size_t> watermark_offsets;
+        watermark_offsets.reserve(DIMS_COUNT);
+        for (uint8_t d = 0; d < DIMS_COUNT; ++d) {
+          const DimCodeType& watermark_value = Query::filter->watermark_vals[d];
+          if (watermark_value > 0) {
+            watermark_offsets.push_back(Query::store.watermarks[d].GetOffset(watermark_value));
+          }
+        }
+        if (!watermark_offsets.empty()) {
+          start_offset = *min_element(watermark_offsets.begin(), watermark_offsets.end());
+          CLOG(DEBUG, "Query")<<"Start iterating from offset: "<<start_offset;
+        }
+      }
+
+      size_t records_num = Query::store.records.size();
+      for (size_t offset = start_offset; offset < records_num; ++offset) {
+        const Record& r = Query::store.records[offset];
         const DimCodes& row_dims = r.first;
         if (!Query::filter || Query::filter->Apply(row_dims)) {
           vector<DimCodeType> v(dims_count);
@@ -98,6 +121,10 @@ struct QueryEngine: BaseQueryEngine<typename Store::MetricType_> {
     EqualsFilter(Store &store, const uint8_t& dim_index, const string& value)
       :Filter(store),dim_index(dim_index) {
       value_code = store.dict.GetCode(dim_index, value);
+
+      if (store.spec.GetWatermarkStep(dim_index) > 0) {
+        Filter::watermark_vals[dim_index] = value_code;
+      }
     }
 
     ~EqualsFilter() {}
@@ -113,8 +140,14 @@ struct QueryEngine: BaseQueryEngine<typename Store::MetricType_> {
 
     InFilter(Store &store, const uint8_t& dim_index, const vector<string>& values)
       :Filter(store),dim_index(dim_index) {
+
       for (auto & value : values) {
-        value_codes.insert(store.dict.GetCode(dim_index, value));
+        DimCodeType value_code = store.dict.GetCode(dim_index, value);
+        value_codes.insert(value_code);
+      }
+
+      if (store.spec.GetWatermarkStep(dim_index) > 0) {
+        Filter::watermark_vals[dim_index] = *min_element(value_codes.begin(), value_codes.end());
       }
     }
 
@@ -132,6 +165,10 @@ struct QueryEngine: BaseQueryEngine<typename Store::MetricType_> {
     GreaterThanFilter(Store &store, uint8_t dim_index, const string& value)
       :Filter(store),dim_index(dim_index) {
       value_code = stoi(value);
+
+      if (store.spec.GetWatermarkStep(dim_index) > 0) {
+        Filter::watermark_vals[dim_index] = value_code;
+      }
     }
 
     ~GreaterThanFilter() {}
@@ -164,7 +201,19 @@ struct QueryEngine: BaseQueryEngine<typename Store::MetricType_> {
     const vector<Filter*> filters;
 
     LogicalFilter(Store &store, Op operation, const vector<Filter*>& filters)
-      :Filter(store),operation(operation),filters(filters) {}
+      :Filter(store),operation(operation),filters(filters) {
+      
+      for (uint8_t i = 0; i < DIMS_COUNT; ++i) {
+        vector<DimCodeType> watermark_vals;
+        watermark_vals.reserve(filters.size());
+        for (auto filter : filters) {
+          watermark_vals.push_back(filter->watermark_vals[i]);
+        }
+        Filter::watermark_vals[i] = operation == Op::And ?
+          *max_element(watermark_vals.begin(), watermark_vals.end())
+          : *min_element(watermark_vals.begin(), watermark_vals.end());
+      }
+    }
     
     ~LogicalFilter() {
       for (auto filter : filters) {
@@ -196,7 +245,12 @@ struct QueryEngine: BaseQueryEngine<typename Store::MetricType_> {
     const Filter* filter;
 
     NotFilter(Store &store, const Filter* filter)
-      :Filter(store),filter(filter) {}
+      :Filter(store),filter(filter) {
+      // XXX - reset watermark values
+      for (auto & w : Filter::watermark_vals) {
+        w = 0;
+      }
+    }
     
     ~NotFilter() {
       delete filter;

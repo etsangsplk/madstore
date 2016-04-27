@@ -35,44 +35,28 @@ struct StoreFacade {
 
   StoreFacade(const StoreFacade& that) = delete;
 
-  inline void Upsert(vector<uint8_t>& dim_indexes, vector<uint8_t>& metric_indexes, vector<string>& fields) {
-    store->Upsert(dim_indexes, metric_indexes, fields);
+  inline void Upsert(UpsertSpec& spec, vector<string>& values) {
+    store->Upsert(spec, values);
   }
 
   void Read(InputSpec& spec) { 
-    TIMED_FUNC(timerObj);
+    TIMED_SCOPE(timerObj, "loading data");
 
-    vector<string>& columns = spec.columns;
-    uint8_t columns_num = columns.size();
-    vector<uint8_t> dim_indexes;
-    vector<uint8_t> metric_indexes;
-    for (uint8_t i = 0; i < columns_num; ++i) {
-      string &column = columns[i];
-      if (store_spec.GetDimIndex(column) != -1) {
-        dim_indexes.push_back(i);
-      } else if (store_spec.GetMetricIndex(column) != -1) {
-        metric_indexes.push_back(i);
-      } else {
-        throw invalid_argument("Unknown column: " + column);
-      }
-    }
-
-    assert(dim_indexes.size() == store_spec.DimsCount());
-    assert(metric_indexes.size() <= store_spec.MetricsCount());
+    UpsertSpec upsert_spec(spec, store_spec);
 
     ifstream input(spec.file);
     if (!input.good()) {
       throw runtime_error("Input file not accessible: " + spec.file);
     }
 
+    vector<string> values(spec.columns.size());
     for (string row; getline(input, row, spec.row_delimiter); ) {
       istringstream ss(row);
-      vector<string> fields;
-      fields.reserve(columns_num);
-      for (string field; getline(ss, field, spec.field_delimiter); ) {
-        fields.push_back(field);
+      int i = 0;
+      for (string value; getline(ss, value, spec.field_delimiter); ) {
+        values[i++] = value;
       }
-      Upsert(dim_indexes, metric_indexes, fields);
+      Upsert(upsert_spec, values);
     }
   }
 
@@ -81,7 +65,7 @@ struct StoreFacade {
   }
 
   void RunQuery(json& query_spec, vector<pair<vector<string>,vector<MetricType>>>& result) {
-    TIMED_FUNC(timerObj);
+    TIMED_SCOPE(timerObj, "running query");
 
     BaseQueryEngine<MetricType>* query_engine = store->CreateQueryEngine();
     query_engine->RunQuery(query_spec, result);
