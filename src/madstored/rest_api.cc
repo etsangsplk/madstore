@@ -32,8 +32,8 @@ void RestAPI::Handler(evhttp_request* req, void*) {
       evbuffer_copyout(input_buf, req_body, req_length);
 
       try {
-        json request = json::parse(req_body);
         if (path == "/api/query") {
+          json request = json::parse(req_body);
           vector<pair<vector<string>,vector<unsigned long>>> result;
           store->RunQuery(request, result);
           ostringstream os;
@@ -55,8 +55,13 @@ void RestAPI::Handler(evhttp_request* req, void*) {
           RestAPI::Response(req, "text/tab-separated-values", os.str());
         }
         else if (path == "/api/load") {
+          json request = json::parse(req_body);
           InputSpec input_spec(request);
           store->Read(input_spec);
+          evhttp_send_reply(req, HTTP_OK, nullptr, nullptr);
+        }
+        else if (path == "/api/optimize-memory") {
+          store->OptimizeMemUsage();
           evhttp_send_reply(req, HTTP_OK, nullptr, nullptr);
         }
         else {

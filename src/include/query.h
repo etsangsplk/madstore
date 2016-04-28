@@ -37,7 +37,7 @@ struct QueryEngine: BaseQueryEngine<typename Store::MetricType_> {
 
   Store& store;
 
-  QueryEngine(Store& store):store(store) {}
+  QueryEngine(Store& store): store(store) {}
 
   struct Filter {
     Store &store;
@@ -46,6 +46,7 @@ struct QueryEngine: BaseQueryEngine<typename Store::MetricType_> {
     Filter(Store& store): store(store), watermark_vals({}) {}
     virtual ~Filter() {}
     virtual bool Apply(const DimCodes& dims) const = 0;
+    virtual int GetPrecedence() const = 0;
   };
 
   struct Query {
@@ -132,6 +133,10 @@ struct QueryEngine: BaseQueryEngine<typename Store::MetricType_> {
     bool Apply(const DimCodes &dims) const {
       return dims[dim_index] == value_code;
     }
+
+    int GetPrecedence() const {
+      return 1;
+    }
   };
 
   struct InFilter: Filter {
@@ -156,6 +161,10 @@ struct QueryEngine: BaseQueryEngine<typename Store::MetricType_> {
     bool Apply(const DimCodes &dims) const {
       return value_codes.find(dims[dim_index]) != value_codes.end();
     }
+
+    int GetPrecedence() const {
+      return 4;
+    }
   };
 
   struct GreaterThanFilter: Filter {
@@ -176,6 +185,10 @@ struct QueryEngine: BaseQueryEngine<typename Store::MetricType_> {
     bool Apply(const DimCodes &dims) const {
       return dims[dim_index] > value_code;
     }
+
+    int GetPrecedence() const {
+      return 1;
+    }
   };
 
   struct LessThanFilter: Filter {
@@ -191,6 +204,10 @@ struct QueryEngine: BaseQueryEngine<typename Store::MetricType_> {
 
     bool Apply(const DimCodes &dims) const {
       return dims[dim_index] < value_code;
+    }
+
+    int GetPrecedence() const {
+      return 1;
     }
   };
 
@@ -239,6 +256,10 @@ struct QueryEngine: BaseQueryEngine<typename Store::MetricType_> {
           return false;
       }
     }
+
+    int GetPrecedence() const {
+      return operation == Op::And ? 2 : 3;
+    }
   };
 
   struct NotFilter: Filter {
@@ -259,6 +280,10 @@ struct QueryEngine: BaseQueryEngine<typename Store::MetricType_> {
     bool Apply(const DimCodes &dims) const {
       return !filter->Apply(dims);
     }
+
+    int GetPrecedence() const {
+      return filter->GetPrecedence();
+    }
   };
 
   struct FilterBuilder {
@@ -273,6 +298,9 @@ struct QueryEngine: BaseQueryEngine<typename Store::MetricType_> {
         for (auto & filter : filter_spec["filters"]) {
           filters.push_back(Build(filter));
         }
+        sort(filters.begin(), filters.end(), [] (const Filter* a, const Filter* b) -> bool { 
+          return a->GetPrecedence() < b->GetPrecedence();
+        });
         return new LogicalFilter(store,
             op == "and" ? LogicalFilter::Op::And : LogicalFilter::Op::Or, filters);
       }

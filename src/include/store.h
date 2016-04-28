@@ -5,6 +5,7 @@
 #include <vector>
 #include <cstring>
 #include <google/dense_hash_map>
+#include "../3rdparty/easylogging++.h"
 #include "types.h"
 #include "dims.h"
 #include "metrics.h"
@@ -25,6 +26,7 @@ struct BaseStore {
   virtual void Upsert(UpsertSpec& spec, vector<string>& values) = 0;
   virtual void GetStats(json& stats) = 0;
   virtual BaseQueryEngine<MetricType>* CreateQueryEngine() = 0;
+  virtual void OptimizeMemUsage() = 0;
 };
 
 template<typename DimCodeType,size_t DimsCount,typename MetricType,size_t MetricsCount>
@@ -96,13 +98,22 @@ struct Store: BaseStore<DimCodeType,MetricType> {
     unsigned long offsets_usage = record_offsets.size() * (sizeof(DimCodes) + sizeof(size_t));
     // Multiply by dense_hash_map overhead:
     mem_usage += offsets_usage * 1.78;
-    stats["records_usage_mb"] = mem_usage/(1024*1024);
+    stats["records_usage_mb"] = mem_usage / (1024 * 1024);
 
     dict.GetStats(stats);
   }
 
   BaseQueryEngine<MetricType>* CreateQueryEngine() {
     return new QueryEngine<Store>(*this);
+  }
+
+  void OptimizeMemUsage() {
+    size_t prev_capacity = records.capacity();
+    records.shrink_to_fit();
+
+    CLOG(INFO, "Store")
+      <<"Freed up "<<(prev_capacity - records.capacity()) * sizeof(Record) / (1024 * 1024)
+      <<"MB of memory";
   }
 };
 

@@ -71,6 +71,10 @@ struct StoreFacade {
     query_engine->RunQuery(query_spec, result);
     delete query_engine;
   }
+
+  void OptimizeMemUsage() {
+    store->OptimizeMemUsage();
+  }
 };
 
 #endif /* MAD_STORE_FACADE_H */
