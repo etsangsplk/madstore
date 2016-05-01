@@ -2,7 +2,7 @@
 #define MAD_QUERY_H
 
 #include <stdexcept>
-#include <set>
+#include <unordered_set>
 #include <algorithm>
 #include "types.h"
 #include "store.h"
@@ -141,7 +141,7 @@ struct QueryEngine: BaseQueryEngine<typename Store::MetricType_> {
 
   struct InFilter: Filter {
     uint8_t dim_index;
-    set<DimCodeType> value_codes;
+    unordered_set<DimCodeType> value_codes;
 
     InFilter(Store &store, const uint8_t& dim_index, const vector<string>& values)
       :Filter(store),dim_index(dim_index) {
@@ -267,10 +267,6 @@ struct QueryEngine: BaseQueryEngine<typename Store::MetricType_> {
 
     NotFilter(Store &store, const Filter* filter)
       :Filter(store),filter(filter) {
-      // XXX - reset watermark values
-      for (auto & w : Filter::watermark_vals) {
-        w = 0;
-      }
     }
     
     ~NotFilter() {
