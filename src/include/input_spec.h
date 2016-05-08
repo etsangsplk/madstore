@@ -1,10 +1,10 @@
 #ifndef MAD_INPUT_SPEC_H
 #define MAD_INPUT_SPEC_H
 
-#include <stdexcept>
-#include "types.h"
+#include "../3rdparty/json.hpp"
 
 using namespace std;
+using json = nlohmann::json;
 
 struct InputSpec {
   enum Format {TSV};
@@ -12,25 +12,10 @@ struct InputSpec {
   Format format;
   string file;
   vector<string> columns;
-  char field_delimiter = '\t';
-  char row_delimiter = '\n';
+  char field_delimiter;
+  char row_delimiter;
 
-  InputSpec(json& spec) {
-    file = spec["file"];
-    columns = spec["columns"].get<vector<string>>();
-    string fmt = spec["format"];
-    if (fmt == "tsv") {
-      format = Format::TSV;
-      if (spec.find("field_delimiter") != spec.end()) {
-        field_delimiter = spec["field_delimiter"].get<string>().at(0);
-      }
-      if (spec.find("row_delimiter") != spec.end()) {
-        row_delimiter = spec["row_delimiter"].get<string>().at(0);
-      }
-    } else {
-      throw invalid_argument("Unsupported format: " + format);
-    }
-  }
+  InputSpec(json& spec);
 };
 
 #endif /* MAD_INPUT_SPEC_H */

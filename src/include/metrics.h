@@ -2,6 +2,7 @@
 #define MAD_METRICS_H
 
 #include <stdint.h>
+#include "types.h"
 
 using namespace std;
 
@@ -18,11 +19,11 @@ struct Metric {
     :type(type),name(name) {}
 };
 
-template<typename MetricType,size_t MetricsCount>
+template<size_t MetricsCount>
 struct MetricsArray: array<MetricType,MetricsCount> {
 
   inline const MetricsArray& operator += (const MetricsArray &other) {
-    for (int i = 0; i < MetricsCount; ++i) {
+    for (uint8_t i = 0; i < MetricsCount; ++i) {
       (*this)[i] += other[i];
     }
     return (*this);

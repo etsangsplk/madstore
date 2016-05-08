@@ -3,11 +3,12 @@
 #include <stdexcept>
 #include <memory>
 #include <sstream>
-#include <ctime>
 #include "rest_api.h"
 #include "../3rdparty/easylogging++.h"
+#include "../3rdparty/json.hpp"
 
 using namespace std;
+using json = nlohmann::json;
 
 StoreFacade* RestAPI::store;
 
@@ -64,6 +65,12 @@ void RestAPI::Handler(evhttp_request* req, void*) {
           store->OptimizeMemUsage();
           evhttp_send_reply(req, HTTP_OK, nullptr, nullptr);
         }
+#ifdef PERSIST
+        else if (path == "/api/persist") {
+          store->Persist();
+          evhttp_send_reply(req, HTTP_OK, nullptr, nullptr);
+        }
+#endif
         else {
           evhttp_send_reply(req, HTTP_NOTFOUND, nullptr, nullptr);
         }

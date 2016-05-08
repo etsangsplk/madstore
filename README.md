@@ -5,7 +5,7 @@ In-memory data store for dimensions and metrics.
 
 ## How it works?
 
-The implementation is naive, though using mechanical sympathy can provide better query results in some cases.
+The implementation is naive, though using mechanical sympathy can provide good query results in some cases.
 
 ## Usage
 
@@ -18,6 +18,10 @@ You must have the following prerequisites:
  * G++ >= 4.9
  * libevent >= 2.0
  * sparsehash >= 2.0
+
+When using persistence (`--enable-persistence` configure flag), you must also have:
+
+ * Boost System >= 1.55
 
 To build the binary, run:
 

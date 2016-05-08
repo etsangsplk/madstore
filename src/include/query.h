@@ -4,9 +4,9 @@
 #include <stdexcept>
 #include <unordered_set>
 #include <algorithm>
-#include "types.h"
+#include "iterables_map.h"
 #include "store.h"
-#include "../3rdparty/easylogging++.h"
+#include "../3rdparty/json.hpp"
 
 static inline void prefetch_range(const void *addr, size_t len) {
 #ifdef ARCH_HAS_PREFETCH
@@ -17,27 +17,23 @@ static inline void prefetch_range(const void *addr, size_t len) {
 }
 
 using namespace std;
-
-template<typename MetricType>
-struct BaseQueryEngine {
-  virtual void RunQuery(json& query_spec, vector<pair<vector<string>,vector<MetricType>>>& result) = 0;
-};
+using json = nlohmann::json;
 
 template<typename Store>
-struct QueryEngine: BaseQueryEngine<typename Store::MetricType_> {
+struct QueryEngine: BaseQueryEngine {
 
-  static const size_t DIMS_COUNT = Store::DIMS_COUNT;
+  static const auto DIMS_COUNT = Store::DIMS_COUNT;
 
   using DimCodes = typename Store::DimCodes;
-  using DimCodeType = typename Store::DimCodeType_;
   using Metrics = typename Store::Metrics;
-  using MetricType = typename Store::MetricType_;
   using Result = vector<pair<vector<string>,Metrics>>;
   using Record = typename Store::Record;
+  using Records = typename Store::Records;
 
   Store& store;
+  Records& records;
 
-  QueryEngine(Store& store): store(store) {}
+  QueryEngine(Store& store, Records& records):store(store),records(records) {}
 
   struct Filter {
     Store &store;
@@ -51,10 +47,11 @@ struct QueryEngine: BaseQueryEngine<typename Store::MetricType_> {
 
   struct Query {
     Store& store;
+    Records& records;
     const Filter* filter;
 
-    Query(Store& store, const Filter* filter):
-      store(store),filter(filter) {}
+    Query(Store& store, Records& records, const Filter* filter):
+      store(store),records(records),filter(filter) {}
 
     virtual ~Query() {
       delete filter;
@@ -65,8 +62,9 @@ struct QueryEngine: BaseQueryEngine<typename Store::MetricType_> {
   struct GroupByQuery: Query {
     vector<uint8_t> column_indices;
 
-    GroupByQuery(vector<uint8_t> column_indices, Store& store, Filter* filter):
-      column_indices(column_indices), Query(store, filter) {}
+    GroupByQuery(vector<uint8_t> column_indices, Store& store,
+        Records& records, Filter* filter):
+      column_indices(column_indices), Query(store, records, filter) {}
 
     void Run(Result& result) {
       uint8_t dims_count = column_indices.size();
@@ -74,9 +72,9 @@ struct QueryEngine: BaseQueryEngine<typename Store::MetricType_> {
       vector<DimCodeType> empty(dims_count, -1);
       grouped_metrics.set_empty_key(empty);
 
-      size_t start_offset = 0;
+      offset_t start_offset = 0;
       if (Query::filter) {
-        vector<size_t> watermark_offsets;
+        vector<offset_t> watermark_offsets;
         watermark_offsets.reserve(DIMS_COUNT);
         for (uint8_t d = 0; d < DIMS_COUNT; ++d) {
           const DimCodeType& watermark_value = Query::filter->watermark_vals[d];
@@ -86,22 +84,27 @@ struct QueryEngine: BaseQueryEngine<typename Store::MetricType_> {
         }
         if (!watermark_offsets.empty()) {
           start_offset = *min_element(watermark_offsets.begin(), watermark_offsets.end());
-          CLOG(DEBUG, "Query")<<"Start iterating from offset: "<<start_offset;
         }
       }
 
-      size_t records_num = Query::store.records.size();
-      for (size_t offset = start_offset; offset < records_num; ++offset) {
-        const Record& r = Query::store.records[offset];
-        const DimCodes& row_dims = r.first;
-        if (!Query::filter || Query::filter->Apply(row_dims)) {
-          vector<DimCodeType> v(dims_count);
-          for (uint8_t i = 0; i < dims_count; ++i) {
-            v[i] = row_dims[column_indices[i]];
+      auto volumes = Query::records.GetVolumes(start_offset);
+      for (auto volume : volumes) {
+        auto offset = volume.first;
+        auto records = volume.second;
+        auto records_num = records->size();
+        CLOG(DEBUG, "Query")<<"Iterating volume "<<static_cast<void*>(records)<<" from offset: "<<offset;
+        for (; offset < records_num; ++offset) {
+          const auto & record = (*records)[offset];
+          const auto & row_dims = record.first;
+          if (!Query::filter || Query::filter->Apply(row_dims)) {
+            vector<DimCodeType> v(dims_count);
+            for (uint8_t i = 0; i < dims_count; ++i) {
+              v[i] = row_dims[column_indices[i]];
+            }
+            grouped_metrics[v] += record.second;
           }
-          grouped_metrics[v] += r.second;
+          prefetch_range(&record + sizeof(Record), 10);
         }
-        prefetch_range(&r + sizeof(Record), 10);
       }
 
       // Translate dimensions back to original values:
@@ -326,8 +329,9 @@ struct QueryEngine: BaseQueryEngine<typename Store::MetricType_> {
 
   struct QueryBuilder {
     Store &store;
+    Records& records;
 
-    QueryBuilder(Store &store): store(store) {}
+    QueryBuilder(Store &store, Records& records): store(store),records(records) {}
 
     Query* Build(json& query_spec) {
       Filter* filter = nullptr;
@@ -340,14 +344,14 @@ struct QueryEngine: BaseQueryEngine<typename Store::MetricType_> {
         vector<string> columns = query_spec["columns"].get<vector<string>>();
         vector<uint8_t> column_indices;
         store.spec.GetDimIndices(columns, column_indices);
-        return new GroupByQuery(column_indices, store, filter);
+        return new GroupByQuery(column_indices, store, records, filter);
       }
       throw invalid_argument("Unknown query type: " + type);
     }
   };
 
   void RunQuery(json& query_spec, Result& result) {
-    QueryBuilder builder(store);
+    QueryBuilder builder(store, records);
     Query* query = builder.Build(query_spec);
     query->Run(result);
     delete query;

@@ -1,8 +1,10 @@
 #include <fstream>
+#include "../3rdparty/json.hpp"
 #include "rest_api.h"
 #include "logger.h"
 
 using namespace std;
+using json = nlohmann::json;
 
 int main(int argc, char** argv) {
   if (argc != 2) {
@@ -12,8 +14,7 @@ int main(int argc, char** argv) {
 
   Logger::Init();
 
-  ifstream spec_file(argv[1]);
-  json store_spec_json = json::parse(spec_file);
+  json store_spec_json = json::parse(ifstream(argv[1]));
   StoreSpec store_spec(store_spec_json);
   StoreFacade store(store_spec);
 
