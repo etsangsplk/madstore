@@ -1,16 +1,18 @@
 {
   "dimensions": [
-    {"name": "install_date", "type": "integer"},
-    {"name": "publisher"},
-    {"name": "partner"},
-    {"name": "campaign"},
+    {"name": "edit_time", "type": "integer", "watermark_step": 730},
+    {"name": "editor_name"},
+    {"name": "article_url"},
+    {"name": "article_title"},
+    {"name": "language"},
+    {"name": "user_agent"},
     {"name": "country"},
-    {"name": "event_name"}
+    {"name": "city"}
   ],
   "metrics": [
-    {"name": "event_count"},
-    {"name": "event_new"},
-    {"name": "revenue"}
+    {"name": "count"},
+    {"name": "lines_changed"},
+    {"name": "time_spent"}
   ],
   "port": 5555
 }

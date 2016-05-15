@@ -29,3 +29,7 @@ To build the binary, run:
       ~$ ./configure
       ~$ make -j 4
 
+### Testing
+
+See [Examples](examples/README.md) section.
+

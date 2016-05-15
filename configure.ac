@@ -19,11 +19,11 @@ AC_CHECK_LIB([event], [evhttp_start], [],
 
 AC_ARG_WITH([dims-x],
             AS_HELP_STRING([--with-dims-x=NUM], [allowed dimensions number multiplier]))
-AS_IF([test ! -z "x${with_dims_x}"], [AC_DEFINE_UNQUOTED([DIMS_X], [$with_dims_x])])
+AS_IF([test ! -z "${with_dims_x}"], [AC_DEFINE_UNQUOTED([DIMS_X], [$with_dims_x])])
 
 AC_ARG_WITH([metrics-x],
             AS_HELP_STRING([--with-metrics-x=NUM], [allowed metrics number multiplier]))
-AS_IF([test ! -z "x${with_metrics_x}"], [AC_DEFINE_UNQUOTED([METRICS_X], [$with_metrics_x])])
+AS_IF([test ! -z "${with_metrics_x}"], [AC_DEFINE_UNQUOTED([METRICS_X], [$with_metrics_x])])
 
 AC_ARG_ENABLE([persistence],
               AS_HELP_STRING([--enable-persistence], [enable saving memory snapshot to disk]))

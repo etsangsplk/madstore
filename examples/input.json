@@ -1,5 +1,17 @@
 {
-  "file": "/home/michael/inapps.tsv",
-  "columns": ["install_date","publisher","partner","campaign","country", "event_name", "event_count", "event_new", "revenue"],
+  "file": "data.tsv",
+  "columns": [
+    "edit_time",
+    "editor_name",
+    "article_url",
+    "article_title",
+    "language",
+    "user_agent",
+    "country",
+    "city",
+    "count",
+    "lines_changed",
+    "time_spent"
+  ],
   "format": "tsv"
 }
