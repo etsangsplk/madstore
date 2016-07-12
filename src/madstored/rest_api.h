@@ -2,9 +2,7 @@
 #define MAD_HTTP_H
 
 #include <evhttp.h>
-#include "../include/store_facade.h"
-
-using namespace std;
+#include "store_facade.h"
 
 struct RestAPI {
   static StoreFacade* store;
@@ -22,7 +20,7 @@ struct RestAPI {
   }
 
   void Start();
-  static void Response(evhttp_request*, const char [], string);
+  static void Response(evhttp_request*, const char [], std::string);
   static void Handler(evhttp_request*, void*);
 };
 

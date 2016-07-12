@@ -23,6 +23,10 @@ When using persistence (`--enable-persistence` configure flag), you must also ha
 
  * Boost System >= 1.55
 
+When using select expressions (`--enable-expressions` configure flag), you must also have:
+
+ * [asmjit] >= 6467c73
+
 To build the binary, run:
 
       ~$ ./buildconf.sh
@@ -128,4 +132,7 @@ To get store statistics, issue a GET query to the `/api/stats` endpoint, like th
      ~$ curl -sS http://localhost:5555/api/stats
      
 The result will be returned in JSON format.
+
+
+[asmjit]:https://github.com/kobalicek/asmjit
 

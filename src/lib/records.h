@@ -9,7 +9,6 @@
 #include <boost/interprocess/managed_mapped_file.hpp>
 #include "../3rdparty/json.hpp"
 
-using namespace std;
 using json = nlohmann::json;
 namespace bi = boost::interprocess;
 
@@ -20,19 +19,19 @@ template<typename Record,typename Metrics>
 struct PersistentRecords {
 
   using MappedFileAllocator = bi::allocator<Record, bi::managed_mapped_file::segment_manager>;
-  using RecordsVector = vector<Record, MappedFileAllocator>;
+  using RecordsVector = std::vector<Record, MappedFileAllocator>;
 
   const unsigned long FILE_SIZE = 2ul<<30; // 2GB
   const offset_t VOLUME_SIZE = FILE_SIZE/sizeof(Record) - 1024;
 
-  vector<bi::managed_mapped_file*> segments;
-  vector<RecordsVector*> volumes;
+  std::vector<bi::managed_mapped_file*> segments;
+  std::vector<RecordsVector*> volumes;
 
   PersistentRecords() {
     for (int i = 1; ; ++i) {
       std::ostringstream filebuf;
       filebuf<<"records"<<i<<".mad";
-      string file = filebuf.str();
+      std::string file = filebuf.str();
       if (access(file.c_str(), F_OK) == -1) {
         break;
       }
@@ -60,7 +59,7 @@ struct PersistentRecords {
   void AddSegment() {
     std::ostringstream filebuf;
     filebuf<<"records"<<segments.size() + 1<<".mad";
-    string file = filebuf.str();
+    std::string file = filebuf.str();
     auto segment = new bi::managed_mapped_file(bi::create_only, file.c_str(), FILE_SIZE);
     segments.push_back(segment);
     auto volume = segment->find_or_construct<RecordsVector>("records")(segment->get_segment_manager());
@@ -74,13 +73,13 @@ struct PersistentRecords {
   /**
    * Returns all volumes that contain the given offset
    */
-  vector<pair<offset_t,RecordsVector*>> GetVolumes(offset_t start_offset) {
+  std::vector<std::pair<offset_t,RecordsVector*>> GetVolumes(offset_t start_offset) {
     uint8_t volumes_num = volumes.size();
-    vector<pair<offset_t,RecordsVector*>> result;
+    std::vector<std::pair<offset_t,RecordsVector*>> result;
     result.reserve(volumes_num);
     for (int i = 0; i < volumes_num; ++i) {
       if (start_offset <= (i + 1) * VOLUME_SIZE) {
-        result.push_back(pair<offset_t,RecordsVector*>(
+        result.push_back(std::pair<offset_t,RecordsVector*>(
               result.empty() ? start_offset - i * VOLUME_SIZE : 0, volumes[i]));
       } 
     }
@@ -110,7 +109,7 @@ struct PersistentRecords {
     for (auto volume : volumes) {
       records += volume->size();
     }
-    stats["records"] = to_string(records);
+    stats["records"] = std::to_string(records);
     stats["records_usage_mb"] = records * sizeof(Record) / (1024*1024);
   }
 
@@ -125,12 +124,12 @@ struct PersistentRecords {
 template<typename Record,typename Metrics>
 struct InMemoryRecords {
 
-  vector<Record> records;
+  std::vector<Record> records;
 
-  vector<pair<offset_t,vector<Record>*>> GetVolumes(offset_t start_offset) {
-    vector<pair<offset_t,vector<Record>*>> result;
+  std::vector<std::pair<offset_t,std::vector<Record>*>> GetVolumes(offset_t start_offset) {
+    std::vector<std::pair<offset_t,std::vector<Record>*>> result;
     result.reserve(1);
-    result.push_back(pair<offset_t,vector<Record>*>(start_offset, &records));
+    result.push_back(std::pair<offset_t,std::vector<Record>*>(start_offset, &records));
     return result;
   }
 
@@ -144,7 +143,7 @@ struct InMemoryRecords {
   }
 
   void GetStats(json& stats) {
-    stats["records"] = to_string(records.size());
+    stats["records"] = std::to_string(records.size());
     stats["records_usage_mb"] = records.size() * sizeof(Record) / (1024*1024);
   }
 

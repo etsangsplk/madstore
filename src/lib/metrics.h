@@ -4,8 +4,6 @@
 #include <stdint.h>
 #include "types.h"
 
-using namespace std;
-
 /**
  * Metric (column) definition
  */
@@ -13,14 +11,14 @@ struct Metric {
   enum ValueType { Long, Double };
 
   ValueType type;
-  string name;
+  std::string name;
 
-  Metric(ValueType type, string name)
+  Metric(ValueType type, std::string name)
     :type(type),name(name) {}
 };
 
 template<size_t MetricsCount>
-struct MetricsArray: array<MetricType,MetricsCount> {
+struct MetricsArray: std::array<MetricType,MetricsCount> {
 
   inline const MetricsArray& operator += (const MetricsArray &other) {
     for (uint8_t i = 0; i < MetricsCount; ++i) {

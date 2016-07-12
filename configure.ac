@@ -17,6 +17,15 @@ AC_CHECK_HEADER([dense_hash_set], [],
 AC_CHECK_LIB([event], [evhttp_start], [],
              [AC_MSG_ERROR([libevent not found. Run: sudo apt-get install libevent-dev])])
 
+AC_ARG_ENABLE([expressions],
+              AS_HELP_STRING([--enable-expressions], [enable support for expressions in select]))
+AS_IF([test "x$enable_expressions" = "xyes"], [
+  AC_DEFINE([JIT], [1])
+  AC_CHECK_LIB([asmjit], [main], [],
+               [AC_MSG_ERROR([asmjit not found. Go to this Website to install it: https://github.com/kobalicek/asmjit])])
+  AC_SUBST([MADSTORED_LDADD], [-lasmjit])
+])
+
 AC_ARG_WITH([dims-x],
             AS_HELP_STRING([--with-dims-x=NUM], [allowed dimensions number multiplier]))
 AS_IF([test ! -z "${with_dims_x}"], [AC_DEFINE_UNQUOTED([DIMS_X], [$with_dims_x])])
@@ -40,5 +49,5 @@ AS_IF([test "x$enable_debug" = "xyes"], [
   AC_SUBST([CXXFLAGS], [-g])
 ])
 
-AC_CONFIG_FILES([Makefile src/include/Makefile src/madstored/Makefile])
+AC_CONFIG_FILES([Makefile src/lib/Makefile src/madstored/Makefile])
 AC_OUTPUT

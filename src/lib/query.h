@@ -16,7 +16,6 @@ static inline void prefetch_range(const void *addr, size_t len) {
 #endif
 }
 
-using namespace std;
 using json = nlohmann::json;
 
 template<typename Store>
@@ -26,7 +25,7 @@ struct QueryEngine: BaseQueryEngine {
 
   using DimCodes = typename Store::DimCodes;
   using Metrics = typename Store::Metrics;
-  using Result = vector<pair<vector<string>,Metrics>>;
+  using Result = std::vector<std::pair<std::vector<std::string>,Metrics>>;
   using Record = typename Store::Record;
   using Records = typename Store::Records;
 
@@ -37,7 +36,7 @@ struct QueryEngine: BaseQueryEngine {
 
   struct Filter {
     Store &store;
-    array<DimCodeType,DIMS_COUNT> watermark_vals;
+    std::array<DimCodeType,DIMS_COUNT> watermark_vals;
 
     Filter(Store& store): store(store), watermark_vals({}) {}
     virtual ~Filter() {}
@@ -60,21 +59,21 @@ struct QueryEngine: BaseQueryEngine {
   };
 
   struct GroupByQuery: Query {
-    vector<uint8_t> column_indices;
+    std::vector<uint8_t> column_indices;
 
-    GroupByQuery(vector<uint8_t> column_indices, Store& store,
+    GroupByQuery(std::vector<uint8_t> column_indices, Store& store,
         Records& records, Filter* filter):
       column_indices(column_indices), Query(store, records, filter) {}
 
     void Run(Result& result) {
       uint8_t dims_count = column_indices.size();
-      IterablesMap<vector<DimCodeType>,Metrics> grouped_metrics;
-      vector<DimCodeType> empty(dims_count, -1);
+      IterablesMap<std::vector<DimCodeType>,Metrics> grouped_metrics;
+      std::vector<DimCodeType> empty(dims_count, -1);
       grouped_metrics.set_empty_key(empty);
 
       offset_t start_offset = 0;
-      if (Query::filter) {
-        vector<offset_t> watermark_offsets;
+      if (Query::filter != nullptr) {
+        std::vector<offset_t> watermark_offsets;
         watermark_offsets.reserve(DIMS_COUNT);
         for (uint8_t d = 0; d < DIMS_COUNT; ++d) {
           const DimCodeType& watermark_value = Query::filter->watermark_vals[d];
@@ -83,7 +82,7 @@ struct QueryEngine: BaseQueryEngine {
           }
         }
         if (!watermark_offsets.empty()) {
-          start_offset = *min_element(watermark_offsets.begin(), watermark_offsets.end());
+          start_offset = *std::min_element(watermark_offsets.begin(), watermark_offsets.end());
         }
       }
 
@@ -97,7 +96,7 @@ struct QueryEngine: BaseQueryEngine {
           const auto & record = (*records)[offset];
           const auto & row_dims = record.first;
           if (!Query::filter || Query::filter->Apply(row_dims)) {
-            vector<DimCodeType> v(dims_count);
+            std::vector<DimCodeType> v(dims_count);
             for (uint8_t i = 0; i < dims_count; ++i) {
               v[i] = row_dims[column_indices[i]];
             }
@@ -109,11 +108,11 @@ struct QueryEngine: BaseQueryEngine {
 
       // Translate dimensions back to original values:
       for (const auto & r : grouped_metrics) {
-        vector<string> v(dims_count);
+        std::vector<std::string> v(dims_count);
         for (int i = 0; i < dims_count; ++i) {
           Query::store.dict.Decode(column_indices[i], r.first[i], v[i]);
         }
-        result.push_back(pair<vector<string>,Metrics>(v, r.second));
+        result.push_back(std::pair<std::vector<std::string>,Metrics>(v, r.second));
       }
     }
   };
@@ -122,7 +121,7 @@ struct QueryEngine: BaseQueryEngine {
     uint8_t dim_index;
     DimCodeType value_code;
 
-    EqualsFilter(Store &store, const uint8_t& dim_index, const string& value)
+    EqualsFilter(Store &store, const uint8_t& dim_index, const std::string& value)
       :Filter(store),dim_index(dim_index) {
       value_code = store.dict.GetCode(dim_index, value);
 
@@ -144,9 +143,9 @@ struct QueryEngine: BaseQueryEngine {
 
   struct InFilter: Filter {
     uint8_t dim_index;
-    unordered_set<DimCodeType> value_codes;
+    std::unordered_set<DimCodeType> value_codes;
 
-    InFilter(Store &store, const uint8_t& dim_index, const vector<string>& values)
+    InFilter(Store &store, const uint8_t& dim_index, const std::vector<std::string>& values)
       :Filter(store),dim_index(dim_index) {
 
       for (auto & value : values) {
@@ -155,7 +154,7 @@ struct QueryEngine: BaseQueryEngine {
       }
 
       if (store.spec.GetWatermarkStep(dim_index) > 0) {
-        Filter::watermark_vals[dim_index] = *min_element(value_codes.begin(), value_codes.end());
+        Filter::watermark_vals[dim_index] = *std::min_element(value_codes.begin(), value_codes.end());
       }
     }
 
@@ -174,9 +173,9 @@ struct QueryEngine: BaseQueryEngine {
     uint8_t dim_index;
     DimCodeType value_code;
 
-    GreaterThanFilter(Store &store, uint8_t dim_index, const string& value)
+    GreaterThanFilter(Store &store, uint8_t dim_index, const std::string& value)
       :Filter(store),dim_index(dim_index) {
-      value_code = stoi(value);
+      store.dict.Encode(dim_index, value, value_code);
 
       if (store.spec.GetWatermarkStep(dim_index) > 0) {
         Filter::watermark_vals[dim_index] = value_code;
@@ -198,9 +197,9 @@ struct QueryEngine: BaseQueryEngine {
     uint8_t dim_index;
     DimCodeType value_code;
 
-    LessThanFilter(Store &store, uint8_t dim_index, const string& value)
+    LessThanFilter(Store &store, uint8_t dim_index, const std::string& value)
       :Filter(store),dim_index(dim_index) {
-      value_code = stoi(value);
+      store.dict.Encode(dim_index, value, value_code);
     }
 
     ~LessThanFilter() {}
@@ -218,20 +217,20 @@ struct QueryEngine: BaseQueryEngine {
     enum Op { And, Or };
 
     Op operation;
-    const vector<Filter*> filters;
+    const std::vector<Filter*> filters;
 
-    LogicalFilter(Store &store, Op operation, const vector<Filter*>& filters)
+    LogicalFilter(Store &store, Op operation, const std::vector<Filter*>& filters)
       :Filter(store),operation(operation),filters(filters) {
       
       for (uint8_t i = 0; i < DIMS_COUNT; ++i) {
-        vector<DimCodeType> watermark_vals;
+        std::vector<DimCodeType> watermark_vals;
         watermark_vals.reserve(filters.size());
         for (auto filter : filters) {
           watermark_vals.push_back(filter->watermark_vals[i]);
         }
         Filter::watermark_vals[i] = operation == Op::And ?
-          *max_element(watermark_vals.begin(), watermark_vals.end())
-          : *min_element(watermark_vals.begin(), watermark_vals.end());
+          *std::max_element(watermark_vals.begin(), watermark_vals.end())
+          : *std::min_element(watermark_vals.begin(), watermark_vals.end());
       }
     }
     
@@ -291,9 +290,9 @@ struct QueryEngine: BaseQueryEngine {
     FilterBuilder(Store &store): store(store) {}
 
     Filter* Build(json& filter_spec) {
-      string op = filter_spec["operator"];
+      std::string op = filter_spec["operator"];
       if (op == "and" || op == "or") {
-        vector<Filter*> filters;
+        std::vector<Filter*> filters;
         for (auto & filter : filter_spec["filters"]) {
           filters.push_back(Build(filter));
         }
@@ -307,23 +306,23 @@ struct QueryEngine: BaseQueryEngine {
         return new NotFilter(store, Build(filter_spec["filter"]));
       }
       if (op == "equals") {
-        string column = filter_spec["column"];
+        std::string column = filter_spec["column"];
         return new EqualsFilter(store, store.spec.GetDimIndex(column), filter_spec["value"]);
       }
       if (op == "greater") {
-        string column = filter_spec["column"];
+        std::string column = filter_spec["column"];
         return new GreaterThanFilter(store, store.spec.GetDimIndex(column), filter_spec["value"]);
       }
       if (op == "less") {
-        string column = filter_spec["column"];
+        std::string column = filter_spec["column"];
         return new LessThanFilter(store, store.spec.GetDimIndex(column), filter_spec["value"]);
       }
       if (op == "in") {
-        string column = filter_spec["column"];
+        std::string column = filter_spec["column"];
         return new InFilter(store, store.spec.GetDimIndex(column),
-            filter_spec["values"].get<vector<string>>());
+            filter_spec["values"].get<std::vector<std::string>>());
       }
-      throw invalid_argument("Unknown filter operation: " + op);
+      throw std::invalid_argument("Unknown filter operation: " + op);
     }
   };
 
@@ -339,14 +338,14 @@ struct QueryEngine: BaseQueryEngine {
         FilterBuilder filter_builder(store);
         filter = filter_builder.Build(query_spec["filter"]);
       }
-      string type = query_spec["type"];
+      std::string type = query_spec["type"];
       if (type == "groupBy") {
-        vector<string> columns = query_spec["columns"].get<vector<string>>();
-        vector<uint8_t> column_indices;
+        std::vector<std::string> columns = query_spec["columns"].get<std::vector<std::string>>();
+        std::vector<uint8_t> column_indices;
         store.spec.GetDimIndices(columns, column_indices);
         return new GroupByQuery(column_indices, store, records, filter);
       }
-      throw invalid_argument("Unknown query type: " + type);
+      throw std::invalid_argument("Unknown query type: " + type);
     }
   };
 
@@ -357,13 +356,13 @@ struct QueryEngine: BaseQueryEngine {
     delete query;
   }
 
-  void RunQuery(json& query_spec, vector<pair<vector<string>,vector<MetricType>>>& result) {
+  void RunQuery(json& query_spec, std::vector<std::pair<std::vector<std::string>,std::vector<MetricType>>>& result) {
     Result internal_result;
     RunQuery(query_spec, internal_result);
     for (auto & r : internal_result) {
       result.push_back(
-          pair<vector<string>,vector<MetricType>>(
-            r.first, vector<MetricType>(r.second.begin(), r.second.end())));
+          std::pair<std::vector<std::string>,std::vector<MetricType>>(
+            r.first, std::vector<MetricType>(r.second.begin(), r.second.end())));
     }
   }
 };

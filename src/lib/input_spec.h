@@ -3,15 +3,14 @@
 
 #include "../3rdparty/json.hpp"
 
-using namespace std;
 using json = nlohmann::json;
 
 struct InputSpec {
   enum Format {TSV};
 
   Format format;
-  string file;
-  vector<string> columns;
+  std::string file;
+  std::vector<std::string> columns;
   char field_delimiter;
   char row_delimiter;
 

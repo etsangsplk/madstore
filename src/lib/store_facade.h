@@ -5,7 +5,6 @@
 #include "store_spec.h"
 #include "base.h"
 
-using namespace std;
 using json = nlohmann::json;
 
 /**
@@ -20,13 +19,13 @@ struct StoreFacade {
   ~StoreFacade();
   StoreFacade(const StoreFacade& that) = delete;
 
-  inline void Upsert(UpsertSpec& spec, vector<string>& values) {
+  inline void Upsert(UpsertSpec& spec, std::vector<std::string>& values) {
     store->Upsert(spec, values);
   }
 
   void Read(InputSpec& spec);
   void GetStats(json& stats);
-  void RunQuery(json& query_spec, vector<pair<vector<string>,vector<MetricType>>>& result);
+  void RunQuery(json& query_spec, std::vector<std::pair<std::vector<std::string>,std::vector<MetricType>>>& result);
   void OptimizeMemUsage();
 #ifdef PERSIST
   void Persist();

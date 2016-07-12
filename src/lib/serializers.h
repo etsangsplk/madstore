@@ -3,8 +3,6 @@
 
 #include "types.h"
 
-using namespace std;
-
 struct StringToDimCodeSerializer {
 
   size_t entries;
@@ -40,7 +38,7 @@ struct StringToDimCodeSerializer {
         return false;
       }
       void* ptr = (void *)(&value->first);
-      new(ptr) string(buf, size);
+      new(ptr) std::string(buf, size);
       if (fread(const_cast<DimCodeType*>(&value->second), sizeof(DimCodeType), 1, fp) != 1) {
         return false;
       }

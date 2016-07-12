@@ -5,12 +5,10 @@
 #include <stdint.h>
 #include <algorithm>
 
-using namespace std;
-
 struct Watermarks {
   offset_t step;
-  vector<DimCodeType> values;
-  vector<offset_t> offsets;
+  std::vector<DimCodeType> values;
+  std::vector<offset_t> offsets;
 
   Watermarks():step(0) {}
   Watermarks(offset_t& step):step(step) {}

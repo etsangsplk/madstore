@@ -7,16 +7,15 @@
 struct UpsertSpec;
 
 using json = nlohmann::json;
-using namespace std;
 
 struct BaseQueryEngine {
   virtual ~BaseQueryEngine() {}
-  virtual void RunQuery(json& query_spec, vector<pair<vector<string>,vector<MetricType>>>& result) = 0;
+  virtual void RunQuery(json& query_spec, std::vector<std::pair<std::vector<std::string>,std::vector<MetricType>>>& result) = 0;
 };
 
 struct BaseStore {
   virtual ~BaseStore() {}
-  virtual void Upsert(UpsertSpec& spec, vector<string>& values) = 0;
+  virtual void Upsert(UpsertSpec& spec, std::vector<std::string>& values) = 0;
   virtual void GetStats(json& stats) = 0;
   virtual BaseQueryEngine* CreateQueryEngine() = 0;
   virtual void OptimizeMemUsage() = 0;

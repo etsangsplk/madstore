@@ -19,16 +19,16 @@ void StoreFacade::Read(InputSpec& spec) {
 
   UpsertSpec upsert_spec(spec, store_spec);
 
-  ifstream input(spec.file);
+  std::ifstream input(spec.file);
   if (!input.good()) {
-    throw runtime_error("Input file not accessible: " + spec.file);
+    throw std::runtime_error("Input file not accessible: " + spec.file);
   }
 
-  vector<string> values(spec.columns.size());
-  for (string row; getline(input, row, spec.row_delimiter); ) {
-    istringstream ss(row);
+  std::vector<std::string> values(spec.columns.size());
+  for (std::string row; std::getline(input, row, spec.row_delimiter); ) {
+    std::istringstream ss(row);
     size_t i = 0;
-    for (string value; getline(ss, value, spec.field_delimiter); ) {
+    for (std::string value; std::getline(ss, value, spec.field_delimiter); ) {
       values[i++] = value;
     }
     Upsert(upsert_spec, values);
@@ -39,7 +39,7 @@ void StoreFacade::GetStats(json& stats) {
   store->GetStats(stats);
 }
 
-void StoreFacade::RunQuery(json& query_spec, vector<pair<vector<string>,vector<MetricType>>>& result) {
+void StoreFacade::RunQuery(json& query_spec, std::vector<std::pair<std::vector<std::string>,std::vector<MetricType>>>& result) {
   TIMED_SCOPE(timerObj, "running query");
 
   BaseQueryEngine* query_engine = store->CreateQueryEngine();
@@ -54,7 +54,7 @@ void StoreFacade::OptimizeMemUsage() {
 #ifdef PERSIST
 void StoreFacade::Persist() {
   if (!store->Persist()) {
-    throw runtime_error(strerror(errno));
+    throw std::runtime_error(strerror(errno));
   }
 }
 #endif

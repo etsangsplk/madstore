@@ -4,8 +4,6 @@
 #include "store_spec.h"
 #include "query.h"
 
-using namespace std;
-
 BaseStore* StoreFactory::Create(StoreSpec& store_spec) {
 
   size_t dims_count = store_spec.DimsCount();
@@ -677,7 +675,7 @@ BaseStore* StoreFactory::Create(StoreSpec& store_spec) {
 #endif
   }
 
-  throw invalid_argument(
+  throw std::invalid_argument(
       "This store supports "
 #if DIMS_X == 1
       "1-10"

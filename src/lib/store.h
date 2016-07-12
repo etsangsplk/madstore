@@ -13,8 +13,6 @@
 #include "store_spec.h"
 #include "watermarks.h"
 
-using namespace std;
-
 template<typename Store>
 struct QueryEngine;
 
@@ -24,9 +22,9 @@ struct Store: BaseStore {
   static const uint8_t DIMS_COUNT = DimsCount;
   static constexpr char const* FILE_NAME = "meta.mad";
 
-  using DimCodes = array<DimCodeType,DimsCount>;
+  using DimCodes = std::array<DimCodeType,DimsCount>;
   using Metrics = MetricsArray<MetricsCount>;
-  using Record = pair<DimCodes,Metrics>;
+  using Record = std::pair<DimCodes,Metrics>;
 #ifdef PERSIST
   using Records = PersistentRecords<Record,Metrics>;
 #else
@@ -37,7 +35,7 @@ struct Store: BaseStore {
   Records records;
   IterablesMap<DimCodes,offset_t> record_offsets;
   DimDict<DimsCount> dict;
-  array<Watermarks,DimsCount> watermarks;
+  std::array<Watermarks,DimsCount> watermarks;
 
   Store(StoreSpec& spec):spec(spec),dict(spec.dims) {
     DimCodes empty;
@@ -60,8 +58,8 @@ struct Store: BaseStore {
 
   Store(const Store& that) = delete;
 
-  void Upsert(UpsertSpec& spec, vector<string>& values) {
-    array<string,DimsCount> dims;
+  void Upsert(UpsertSpec& spec, std::vector<std::string>& values) {
+    std::array<std::string,DimsCount> dims;
     size_t dim_idx = 0;
     Metrics metrics = {};
     size_t metric_idx = 0; 

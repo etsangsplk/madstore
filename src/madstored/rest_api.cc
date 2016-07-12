@@ -7,15 +7,14 @@
 #include "../3rdparty/easylogging++.h"
 #include "../3rdparty/json.hpp"
 
-using namespace std;
 using json = nlohmann::json;
 
 StoreFacade* RestAPI::store;
 
-void RestAPI::Response(evhttp_request* req, const char content_type[], string content) {
+void RestAPI::Response(evhttp_request* req, const char content_type[], std::string content) {
   auto* output_buf = evhttp_request_get_output_buffer(req);
   evhttp_add_header(req->output_headers, "Content-Type", content_type);
-  evhttp_add_header(req->output_headers, "Content-Length", to_string(content.size()).c_str());
+  evhttp_add_header(req->output_headers, "Content-Length", std::to_string(content.size()).c_str());
   evbuffer_add_printf(output_buf, "%s", content.c_str());
   evhttp_send_reply(req, HTTP_OK, nullptr, output_buf);
 }
@@ -23,7 +22,7 @@ void RestAPI::Response(evhttp_request* req, const char content_type[], string co
 void RestAPI::Handler(evhttp_request* req, void*) {
   try {
     evhttp_cmd_type method = evhttp_request_get_command(req);
-    string path = string(evhttp_request_uri(req));
+    std::string path = std::string(evhttp_request_uri(req));
 
     if (method == EVHTTP_REQ_POST) {
       CLOG(INFO, "RestAPI")<<"Recieved request [POST] "<<path;
@@ -35,9 +34,9 @@ void RestAPI::Handler(evhttp_request* req, void*) {
       try {
         if (path == "/api/query") {
           json request = json::parse(req_body);
-          vector<pair<vector<string>,vector<unsigned long>>> result;
+          std::vector<std::pair<std::vector<std::string>,std::vector<unsigned long>>> result;
           store->RunQuery(request, result);
-          ostringstream os;
+          std::ostringstream os;
           for (const auto & row : result) {
             for (const auto & v : row.first) {
               os<<v<<"\t";
@@ -51,7 +50,7 @@ void RestAPI::Handler(evhttp_request* req, void*) {
               }
               os<<v;
             }
-            os<<endl;
+            os<<std::endl;
           }
           RestAPI::Response(req, "text/tab-separated-values", os.str());
         }
@@ -74,7 +73,7 @@ void RestAPI::Handler(evhttp_request* req, void*) {
         else {
           evhttp_send_reply(req, HTTP_NOTFOUND, nullptr, nullptr);
         }
-      } catch (invalid_argument& e) {
+      } catch (std::invalid_argument& e) {
         evhttp_send_reply(req, HTTP_BADREQUEST, e.what(), nullptr);
       }
     }
@@ -92,7 +91,7 @@ void RestAPI::Handler(evhttp_request* req, void*) {
     else {
       evhttp_send_reply(req, HTTP_BADMETHOD, nullptr, nullptr);
     }
-  } catch (exception& e) {
+  } catch (std::exception& e) {
     evhttp_send_reply(req, HTTP_INTERNAL, e.what(), nullptr);
   }
 }
@@ -101,7 +100,7 @@ void RestAPI::Start() {
   event_init();
   server = evhttp_start("0.0.0.0", port);
   if (!server) {
-    throw runtime_error("Couldn't to initialize HTTP server!");
+    throw std::runtime_error("Couldn't to initialize HTTP server!");
   }
 
   evhttp_set_gencb(server, Handler, nullptr);

@@ -10,7 +10,6 @@
 #include "../3rdparty/json.hpp"
 #include "serializers.h"
 
-using namespace std;
 using google::dense_hash_map;
 using json = nlohmann::json;
 
@@ -22,10 +21,10 @@ struct Dim {
   enum ValueType { String, Integer };
 
   ValueType type;
-  string name;
+  std::string name;
   offset_t watermark_step;
 
-  Dim(ValueType type, string name, offset_t watermark_step)
+  Dim(ValueType type, std::string name, offset_t watermark_step)
     :type(type),name(name),watermark_step(watermark_step) {}
 };
 
@@ -35,12 +34,12 @@ struct Dim {
 template<uint8_t DimsCount>
 struct DimDict {
 
-  vector<Dim> dims;
-  array<dense_hash_map<string,DimCodeType>,DimsCount> value_to_code;
-  array<vector<string>,DimsCount> code_to_value;
+  std::vector<Dim> dims;
+  std::array<dense_hash_map<std::string,DimCodeType>,DimsCount> value_to_code;
+  std::array<std::vector<std::string>,DimsCount> code_to_value;
 
-  DimDict(vector<Dim>& dims):dims(dims) {
-    string empty;
+  DimDict(std::vector<Dim>& dims):dims(dims) {
+    std::string empty;
     // String containing the only CTRL+A character:
     empty.push_back(1);
     for (auto & d : value_to_code) {
@@ -53,21 +52,21 @@ struct DimDict {
   /**
    * Translates dimension values to their codes
    */
-  void Encode(array<string,DimsCount>& values, array<DimCodeType,DimsCount>& codes) {
+  void Encode(std::array<std::string,DimsCount>& values, std::array<DimCodeType,DimsCount>& codes) {
     for (uint8_t i = 0; i < DimsCount; ++i) {
       if (dims[i].type == Dim::ValueType::Integer) {
         codes[i] = stoi(values[i]);
       } else {
-        string& value = values[i];
+        std::string& value = values[i];
         if (value.length() > Dim::SIZE_LIMIT) {
           value.erase(Dim::SIZE_LIMIT);
         }
-        dense_hash_map<string,DimCodeType>& vc = value_to_code[i];
+        dense_hash_map<std::string,DimCodeType>& vc = value_to_code[i];
         auto existing = vc.find(value);
         if (existing == vc.end()) {
           DimCodeType code = vc.size();
           codes[i] = vc[value] = code;
-          vector<string>& cv = code_to_value[i];
+          std::vector<std::string>& cv = code_to_value[i];
           cv.insert(cv.begin() + code, value);
         } else {
           codes[i] = existing->second;
@@ -77,12 +76,24 @@ struct DimDict {
   }
 
   /**
-   * Translates dimension code to its original value
+   * Translates dimension value to its code
    */
-  inline void Decode(const uint8_t& dim_index, const DimCodeType& code, string& value) {
+  inline void Encode(const uint8_t& dim_index, const std::string& value, DimCodeType& code) {
     auto & dim = dims[dim_index];
     if (dim.type == Dim::ValueType::Integer) {
-      value = to_string(code);
+      code = stoi(value);
+    } else {
+      code = value_to_code[dim_index][value];
+    }
+  }
+
+  /**
+   * Translates dimension code to its original value
+   */
+  inline void Decode(const uint8_t& dim_index, const DimCodeType& code, std::string& value) {
+    auto & dim = dims[dim_index];
+    if (dim.type == Dim::ValueType::Integer) {
+      value = std::to_string(code);
     } else {
       value = code_to_value[dim_index][code];
     }
@@ -91,7 +102,7 @@ struct DimDict {
   /**
    * Finds dimension code by the original value
    */
-  inline DimCodeType GetCode(const uint8_t& dim_index, const string& value) {
+  inline DimCodeType GetCode(const uint8_t& dim_index, const std::string& value) {
     auto & dict = value_to_code[dim_index];
     auto it = dict.find(value);
     if (it != dict.end()) {
@@ -105,15 +116,15 @@ struct DimDict {
     for (int i = 0; i < DimsCount; ++i) {
       auto & vc = value_to_code[i];
       auto & cv = code_to_value[i];
-      unsigned long vc_usage = vc.size() * sizeof(dense_hash_map<string,DimCodeType>);
+      unsigned long vc_usage = vc.size() * sizeof(dense_hash_map<std::string,DimCodeType>);
       for (auto & c : vc) {
         vc_usage += c.first.size() + sizeof(DimCodeType);
       }
       // Multiply by dense_hash_map overhead:
       mem_usage += vc_usage * 1.78;
-      unsigned long cv_usage = cv.size() * sizeof(string);
+      unsigned long cv_usage = cv.size() * sizeof(std::string);
       for (auto & v : cv) {
-        cv_usage += v.size() + sizeof(string);
+        cv_usage += v.size() + sizeof(std::string);
       }
       mem_usage += cv_usage;
       stats["cardinality"][dims[i].name] = cv.size();
@@ -167,7 +178,7 @@ struct DimDict {
         if (str_len > 0 && fread(serializer.buf, str_len, 1, fp) != 1) {
           return false;
         }
-        string value(serializer.buf, str_len);
+        std::string value(serializer.buf, str_len);
         vc[value] = cv.size();
         cv.push_back(move(value));
       }

@@ -27,10 +27,10 @@ StoreSpec::StoreSpec(json& spec) {
 }
 
 UpsertSpec::UpsertSpec(InputSpec& input_spec, StoreSpec& store_spec) {
-  vector<string>& columns = input_spec.columns;
+  std::vector<std::string>& columns = input_spec.columns;
   uint8_t columns_num = columns.size();
   for (uint8_t i = 0; i < columns_num; ++i) {
-    string &column = columns[i];
+    std::string &column = columns[i];
     int dim_index;
     if ((dim_index = store_spec.GetDimIndex(column)) != -1) {
       dim_cols.push_back(i);
@@ -40,7 +40,7 @@ UpsertSpec::UpsertSpec(InputSpec& input_spec, StoreSpec& store_spec) {
     } else if (store_spec.GetMetricIndex(column) != -1) {
       metric_cols.push_back(i);
     } else {
-      throw invalid_argument("Unknown column: " + column);
+      throw std::invalid_argument("Unknown column: " + column);
     }
   }
 
