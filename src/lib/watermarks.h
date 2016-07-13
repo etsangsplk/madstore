@@ -22,7 +22,7 @@ struct Watermarks {
   }
 
   offset_t GetOffset(const DimCodeType& value) {
-    offset_t i = prev(lower_bound(values.begin(), values.end(), value)) - values.begin();
+    auto i = prev(lower_bound(values.begin(), values.end(), value)) - values.begin();
     return offsets[i < 0 ? 0 : i];
   }
 

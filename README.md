@@ -15,7 +15,7 @@ You must have the following prerequisites:
 
  * Autoconf >= 2.69
  * Automake >= 1.14
- * G++ >= 4.9
+ * C++14 compiler (g++ >= 5.1 or clang++ >= 3.5.x)
  * libevent >= 2.0
  * sparsehash >= 2.0
 

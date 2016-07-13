@@ -1,13 +1,15 @@
 AC_INIT([madstore], [0.1])
 
+AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE
 AC_PROG_RANLIB
 AC_LANG([C++])
 : ${CXXFLAGS=-O3}
 AC_PROG_CXX
 AC_SUBST([CC])
+AX_CXX_COMPILE_STDCXX_14
 
-[CPPFLAGS="${CPPFLAGS} -std=c++14 -DELPP_NO_DEFAULT_LOG_FILE"]
+[CPPFLAGS="${CPPFLAGS} -DELPP_NO_DEFAULT_LOG_FILE"]
 [LDFLAGS="${LDFLAGS} -static-libstdc++ -static-libgcc"]
 
 [CPPFLAGS="${CPPFLAGS} -I/usr/include/sparsehash -I/usr/include/google"]
@@ -21,10 +23,13 @@ AC_ARG_ENABLE([expressions],
               AS_HELP_STRING([--enable-expressions], [enable support for expressions in select]))
 AS_IF([test "x$enable_expressions" = "xyes"], [
   AC_DEFINE([JIT], [1])
+  AC_CHECK_HEADER([asmjit/asmjit.h], [],
+               [AC_MSG_ERROR([asmjit not found. Go to this Website to install it: https://github.com/kobalicek/asmjit])])
   AC_CHECK_LIB([asmjit], [main], [],
                [AC_MSG_ERROR([asmjit not found. Go to this Website to install it: https://github.com/kobalicek/asmjit])])
   AC_SUBST([MADSTORED_LDADD], [-lasmjit])
 ])
+AM_CONDITIONAL([JIT], [test "x$enable_expressions" = "xyes"])
 
 AC_ARG_WITH([dims-x],
             AS_HELP_STRING([--with-dims-x=NUM], [allowed dimensions number multiplier]))

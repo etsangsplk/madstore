@@ -1,9 +1,9 @@
 #include "jit.h"
 
-JitFunction::JitFunction(const std::vector<std::string> &names, const SExpr &cell)
+JitFunction::JitFunction(std::vector<std::string>& varNames, const SExpr &expr)
   :runtime(),assembler(&runtime),compiler(&assembler) {
 
-  // Map operators to assembly instructions
+  // Map operators to assembly instructions:
   functionMap["+"] = [&](const std::vector<asmjit::XmmVar> &args) -> asmjit::XmmVar {
     compiler.addsd(args[0], args[1]);
     return args[0];
@@ -24,7 +24,7 @@ JitFunction::JitFunction(const std::vector<std::string> &names, const SExpr &cel
     return args[0];
   };
 
-  // Convert numbers into AsmJit vars.
+  // Convert numbers into AsmJit vars:
   numberHandler = [&](const std::string &number) -> asmjit::XmmVar {
     double x = std::atof(number.c_str());
     asmjit::XmmVar xVar(compiler.newXmmVar(asmjit::kX86VarTypeXmm));
@@ -32,18 +32,20 @@ JitFunction::JitFunction(const std::vector<std::string> &names, const SExpr &cel
     return xVar;
   };
 
-  for(size_t i = 0; i < names.size(); ++i) {
-    argNameToIndex[names[i]] = i;
+  std::map<std::string, int> varNameToIndex;
+  for (auto it = varNames.begin(); it != varNames.end(); ++it) {
+    varNameToIndex[*it] = it - varNames.begin();
   }
 
+  // Resolve symbol to a function argument value:
   symbolHandler = [&](const std::string name) -> asmjit::XmmVar {
-    int index = argNameToIndex.at(name);
+    int index = varNameToIndex.at(name);
     asmjit::XmmVar v(compiler.newXmm());
     compiler.movsd(v, asmjit::Mem(arg0, index * sizeof(double)));
     return v;
   };
 
-  generatedFunction = Generate(cell);
+  generatedFunction = Generate(expr);
 }
 
 void JitFunction::SetXmmVar(asmjit::XmmVar &v, double d) {

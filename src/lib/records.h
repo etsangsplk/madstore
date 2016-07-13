@@ -6,10 +6,14 @@
 #include <sstream>
 #include <stdio.h>
 #include <vector>
-#include <boost/interprocess/managed_mapped_file.hpp>
+#ifdef PERSIST
+# include <boost/interprocess/managed_mapped_file.hpp>
+#endif
 #include "../3rdparty/json.hpp"
 
 using json = nlohmann::json;
+
+#ifdef PERSIST
 namespace bi = boost::interprocess;
 
 /**
@@ -116,6 +120,8 @@ struct PersistentRecords {
   void OptimizeMemUsage() {
   }
 };
+
+#endif /* PERSIST */
 
 /**
  * Just in-memory records storage.

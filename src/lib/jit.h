@@ -24,39 +24,39 @@ class Visitor {
   public:
     Visitor() {}
 
-    EvalReturn Eval(const SExpr &c) {
-      switch(c.type) {
+    EvalReturn Eval(const SExpr &expr) {
+      switch(expr.type) {
         case SExpr::Number:
         {
-          return numberHandler(c.val.c_str());
+          return numberHandler(expr.val.c_str());
         }
 
         case SExpr::List:
         {
-          std::vector<EvalReturn> evalArgs(c.list.size() - 1);
+          std::vector<EvalReturn> evalArgs(expr.list.size() - 1);
 
           // eval each argument
-          std::transform(c.list.begin() + 1, c.list.end(), evalArgs.begin(), [=](const SExpr &c) -> EvalReturn {
+          std::transform(expr.list.begin() + 1, expr.list.end(), evalArgs.begin(), [=](const SExpr &c) -> EvalReturn {
               return this->Eval(c);
           });
 
-          if(functionMap.find(c.list[0].val) == functionMap.end()) {
-            throw std::runtime_error("Could not handle procedure: " + c.list[0].val);
+          if(functionMap.find(expr.list[0].val) == functionMap.end()) {
+            throw std::runtime_error("Could not handle procedure: " + expr.list[0].val);
           }
 
           // call function specified by symbol map with evaled arguments
-          return functionMap.at(c.list[0].val)(evalArgs);
+          return functionMap.at(expr.list[0].val)(evalArgs);
         }
 
         case SExpr::Symbol:
         {
           if (symbolHandler) {
-            return symbolHandler(c.val);
+            return symbolHandler(expr.val);
           }
-          throw std::runtime_error("Cannot handle symbol: " + c.val);
+          throw std::runtime_error("Cannot handle symbol: " + expr.val);
         }
       }
-      throw std::runtime_error("Unsupported S-expression type: " + c.type);
+      throw std::runtime_error("Unsupported S-expression type: " + std::to_string(expr.type));
     }
 };
 
@@ -66,7 +66,6 @@ class JitFunction : public Visitor<asmjit::XmmVar> {
     asmjit::JitRuntime runtime;
     asmjit::X86Assembler assembler;
     asmjit::X86Compiler compiler;
-    std::map<std::string, int> argNameToIndex;
     asmjit::GpVar arg0;
 
     typedef double (*FuncPtrType)(const double * args);
@@ -75,10 +74,10 @@ class JitFunction : public Visitor<asmjit::XmmVar> {
     void SetXmmVar(asmjit::XmmVar &v, double d);
 
   public:
-    JitFunction(const std::vector<std::string> &names, const SExpr &cell);
+    JitFunction(std::vector<std::string>& varNames, const SExpr &expr);
     ~JitFunction();
 
-    FuncPtrType Generate(const SExpr &c);
+    FuncPtrType Generate(const SExpr &expr);
     double operator()(const std::vector<double> &args) const;
 };
 
