@@ -6,6 +6,7 @@
 #include <algorithm>
 #include "iterables_map.h"
 #include "store.h"
+#include "materializer.h"
 #include "../3rdparty/json.hpp"
 
 static inline void prefetch_range(const void *addr, size_t len) {
@@ -25,9 +26,10 @@ struct QueryEngine: BaseQueryEngine {
 
   using DimCodes = typename Store::DimCodes;
   using Metrics = typename Store::Metrics;
-  using Result = std::vector<std::pair<std::vector<std::string>,Metrics>>;
   using Record = typename Store::Record;
   using Records = typename Store::Records;
+  using Result = std::vector<std::pair<std::vector<std::string>,Metrics>>;
+  using GroupedMetrics = IterablesMap<std::vector<DimCodeType>,Metrics>;
 
   Store& store;
   Records& records;
@@ -59,15 +61,19 @@ struct QueryEngine: BaseQueryEngine {
   };
 
   struct GroupByQuery: Query {
-    std::vector<uint8_t> column_indices;
+    Materializer<Store>* materializer;
 
-    GroupByQuery(std::vector<uint8_t> column_indices, Store& store,
-        Records& records, Filter* filter):
-      column_indices(column_indices), Query(store, records, filter) {}
+    GroupByQuery(Store& store, Materializer<Store>* materializer, Records& records, Filter* filter):
+      materializer(materializer), Query(store, records, filter) {}
+
+    ~GroupByQuery() {
+      delete materializer;
+    }
 
     void Run(Result& result) {
+      auto& column_indices = materializer->GetColumnIndices();
       uint8_t dims_count = column_indices.size();
-      IterablesMap<std::vector<DimCodeType>,Metrics> grouped_metrics;
+      GroupedMetrics grouped_metrics;
       std::vector<DimCodeType> empty(dims_count, -1);
       grouped_metrics.set_empty_key(empty);
 
@@ -106,14 +112,7 @@ struct QueryEngine: BaseQueryEngine {
         }
       }
 
-      // Translate dimensions back to original values:
-      for (const auto & r : grouped_metrics) {
-        std::vector<std::string> v(dims_count);
-        for (int i = 0; i < dims_count; ++i) {
-          Query::store.dict.Decode(column_indices[i], r.first[i], v[i]);
-        }
-        result.push_back(std::pair<std::vector<std::string>,Metrics>(v, r.second));
-      }
+      materializer->Materialize(grouped_metrics, result);
     }
   };
 
@@ -340,10 +339,8 @@ struct QueryEngine: BaseQueryEngine {
       }
       std::string type = query_spec["type"];
       if (type == "groupBy") {
-        std::vector<std::string> columns = query_spec["columns"].get<std::vector<std::string>>();
-        std::vector<uint8_t> column_indices;
-        store.spec.GetDimIndices(columns, column_indices);
-        return new GroupByQuery(column_indices, store, records, filter);
+        Materializer<Store>* materializer = Materializer<Store>::Create(store, query_spec);
+        return new GroupByQuery(store, materializer, records, filter);
       }
       throw std::invalid_argument("Unknown query type: " + type);
     }
