@@ -1,5 +1,5 @@
-#ifndef MAD_METRICS_H
-#define MAD_METRICS_H
+#ifndef _MAD_METRICS_H_
+#define _MAD_METRICS_H_
 
 #include <stdint.h>
 #include "types.h"
@@ -28,4 +28,4 @@ struct MetricsArray: std::array<MetricType,MetricsCount> {
   }
 };
 
-#endif /* MAD_METRICS_H */
+#endif /* _MAD_METRICS_H_ */

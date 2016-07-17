@@ -4,8 +4,8 @@
 #include <memory>
 #include <sstream>
 #include "rest_api.h"
-#include "../3rdparty/easylogging++.h"
-#include "../3rdparty/json.hpp"
+#include "easylogging++.h"
+#include "json.hpp"
 
 using json = nlohmann::json;
 
@@ -28,7 +28,8 @@ void RestAPI::Handler(evhttp_request* req, void*) {
       CLOG(INFO, "RestAPI")<<"Recieved request [POST] "<<path;
       auto* input_buf = evhttp_request_get_input_buffer(req);
       int req_length = evbuffer_get_length(input_buf);
-      char req_body[req_length+1] = {0};
+      char req_body[req_length+1];
+      memset(req_body, 0, sizeof(req_body));
       evbuffer_copyout(input_buf, req_body, req_length);
 
       try {

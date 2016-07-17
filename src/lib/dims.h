@@ -1,13 +1,13 @@
-#ifndef MAD_DIMS_H
-#define MAD_DIMS_H
+#ifndef _MAD_DIMS_H_
+#define _MAD_DIMS_H_
 
 #include <stdint.h>
 #include <stdio.h>
 #include <vector>
 #include <cstring>
 #include <google/dense_hash_map>
-#include "../3rdparty/easylogging++.h"
-#include "../3rdparty/json.hpp"
+#include "easylogging++.h"
+#include "json.hpp"
 #include "serializers.h"
 
 using google::dense_hash_map;
@@ -26,6 +26,10 @@ struct Dim {
 
   Dim(ValueType type, std::string name, offset_t watermark_step)
     :type(type),name(name),watermark_step(watermark_step) {}
+
+  inline bool IsNumeric() {
+    return type == ValueType::Integer;
+  }
 };
 
 /**
@@ -188,4 +192,4 @@ struct DimDict {
 #endif /* PERSIST */
 };
 
-#endif /* MAD_DIMS_H */
+#endif /* _MAD_DIMS_H_ */

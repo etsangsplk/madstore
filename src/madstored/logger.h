@@ -1,10 +1,10 @@
-#ifndef MAD_LOGGER_H
-#define MAD_LOGGER_H
+#ifndef _MAD_LOGGER_H_
+#define _MAD_LOGGER_H_
 
-#include "../3rdparty/easylogging++.h"
+#include "easylogging++.h"
 
 struct Logger {
   static void Init();
 };
 
-#endif /* MAD_LOGGER_H */
+#endif /* _MAD_LOGGER_H_ */

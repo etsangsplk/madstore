@@ -1,5 +1,5 @@
-#ifndef ITERABLES_MAP_H
-#define ITERABLES_MAP_H
+#ifndef ITERABLES_MAP_H_
+#define ITERABLES_MAP_H_
 
 #include <stdint.h>
 #include <google/dense_hash_map>
@@ -27,4 +27,4 @@ struct Eq {
 template<typename T,typename V>
 struct IterablesMap: dense_hash_map<T,V,IterableHash<T>,Eq<T>> {};
 
-#endif /* ITERABLES_MAP_H */
+#endif /* ITERABLES_MAP_H_ */

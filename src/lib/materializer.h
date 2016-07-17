@@ -1,14 +1,13 @@
-#ifndef MAD_MATERIALIZER_H
-#define MAD_MATERIALIZER_H
+#ifndef _MAD_MATERIALIZER_H_
+#define _MAD_MATERIALIZER_H_
 
 #include <vector>
 #include <string>
 #include <set>
-#include "../3rdparty/json.hpp"
+#include "json.hpp"
 #include "store.h"
-#ifdef JIT
-# include "lisp.h"
-# include "jit.h"
+#ifdef EXPRESSIONS
+# include "lua.h"
 #endif
 
 using json = nlohmann::json;
@@ -42,8 +41,8 @@ struct Materializer {
       return new ColumnsMaterializer<Store>(store, columns);
     }
     if (query_spec.find("select") != query_spec.end()) {
-#ifdef JIT
-      return new SelectMaterializer<Store>(store, query_spec["columns"]);
+#ifdef EXPRESSIONS
+      return new SelectMaterializer<Store>(store, query_spec["select"]);
 #else
       throw std::invalid_argument("Select expressions are not supported");
 #endif
@@ -78,56 +77,94 @@ struct ColumnsMaterializer: Materializer<Store> {
   }
 };
 
-#ifdef JIT
+#ifdef EXPRESSIONS
 template<typename Store>
 struct SelectMaterializer: Materializer<Store> {
 
+  Lua lua;
   Store& store;
-  std::vector<std::string> columns;
   std::vector<std::string> output_columns;
+  std::vector<const LuaFunction*> functions;
+  std::vector<std::vector<uint8_t>> arg_indices;
 
-  SelectMaterializer(Store& store, json& select):store(store) {
+  SelectMaterializer(Store& store, json& select):store(store),functions(select.size(), nullptr) {
     output_columns.reserve(select.size());
+    arg_indices.resize(select.size());
 
+    std::vector<std::vector<std::string>> arg_names;
+    arg_names.resize(select.size());
+
+    std::set<std::string> columns_set;
     uint8_t column_index = 0;
     for (auto s : select) {
-      output_columns.push_back(s["name"]);
+      const std::string& name = s["name"];
+      output_columns.push_back(name);
 
-      const std::string& type = s["type"];
-      if (type == "column") {
+      if (s.find("expr") != s.end()) {
+        std::vector<std::string> select_fields = s["fields"].get<std::vector<std::string>>();
+        functions[column_index] = &lua.Compile(s["expr"], select_fields);
+        arg_names[column_index] = select_fields;
+        columns_set.insert(select_fields.begin(), select_fields.end());
+      } else {
+        columns_set.insert(name);
+        arg_names[column_index].push_back(name);
       }
-      else if (type == "expression") {
-        SExprParser parser;
-        SExpr expr = parser.Parse(s["expr"]);
-        std::set<std::string> expr_columns_set;
-        FindColumns(expr, expr_columns_set);
-        std::vector<std::string> expr_columns(expr_columns_set.begin(), expr_columns_set.end()); 
-        JitFunction function(expr_columns, expr);
-      }
-      else throw std::invalid_argument("Unknown select type: " + type);
-
-      ++column_index;
+      column_index++;
     }
-    store.spec.GetDimIndices(output_columns, Materializer<Store>::column_indices);
-  }
 
-  void FindColumns(SExpr& expr, std::set<std::string>& expr_columns) {
-    if (expr.type == SExpr::Symbol) {
-      expr_columns.insert(expr.val);
-    } else if (expr.type == SExpr::List) {
-      for (auto it = expr.list.begin() + 1; it != expr.list.end(); ++it) {
-        FindColumns(*it, expr_columns);
+    std::vector<std::string> select_columns(columns_set.begin(), columns_set.end());
+    store.spec.GetDimIndices(select_columns, Materializer<Store>::column_indices);
+
+    for (uint8_t func_idx = 0; func_idx < arg_names.size(); ++func_idx) {
+      auto args = arg_names[func_idx];
+      for (uint8_t arg_idx = 0; arg_idx < args.size(); ++arg_idx) {
+        for (uint8_t s = 0; s < select_columns.size(); ++s) {
+          if (args[arg_idx] == select_columns[s]) {
+            arg_indices[func_idx].push_back(s);
+            break;
+          }
+        }
       }
     }
   }
 
   void Materialize(typename Materializer<Store>::GroupedMetrics& grouped_metrics, typename Materializer<Store>::Result& result) {
+    std::map<std::vector<std::string>, typename Store::Metrics> post_agg;
+    auto columns_num = output_columns.size();
+    for (const auto & r : grouped_metrics) {
+      auto& dim_codes = r.first;
+      std::vector<std::string> values(columns_num);
+      for (int column_idx = 0; column_idx < columns_num; ++column_idx) {
+        store.dict.Decode(Materializer<Store>::column_indices[column_idx], dim_codes[column_idx], values[column_idx]);
+      }
+
+      std::vector<std::string> translated(columns_num);
+      for (int column_idx = 0; column_idx < columns_num; ++column_idx) {
+        const LuaFunction* function = functions[column_idx];
+        if (function != nullptr) {
+          std::vector<std::string> args;
+          args.reserve(arg_indices[column_idx].size());
+          for (auto& arg_idx : arg_indices[column_idx]) {
+            args.push_back(values[arg_idx]);
+          }
+          translated[column_idx] = (*function)(args);
+        } else {
+          translated[column_idx] = values[arg_indices[column_idx][0]];
+        }
+      }
+
+      post_agg[translated] += r.second;
+    }
+
+    for (auto it = post_agg.begin(); it != post_agg.end(); ++it) {
+      result.push_back(std::pair<std::vector<std::string>,typename Store::Metrics>(it->first, it->second));
+    }
   }
 
   std::vector<std::string>& GetColumnNames() {
     return output_columns;
   }
 };
-#endif /* JIT */
+#endif /* EXPRESSIONS */
 
-#endif /* MAD_MATERIALIZER_H */
+#endif /* _MAD_MATERIALIZER_H_ */

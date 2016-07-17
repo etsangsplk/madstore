@@ -1,5 +1,5 @@
-#ifndef MAD_STORE_FACTORY_H
-#define MAD_STORE_FACTORY_H
+#ifndef _MAD_STORE_FACTORY_H_
+#define _MAD_STORE_FACTORY_H_
 
 #ifndef DIMS_X
 # define DIMS_X 1
@@ -16,4 +16,4 @@ struct StoreFactory {
   static BaseStore* Create(StoreSpec& store_spec);
 };
 
-#endif /* MAD_STORE_FACTORY_H */
+#endif /* _MAD_STORE_FACTORY_H_ */

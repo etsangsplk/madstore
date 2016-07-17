@@ -1,0 +1,14 @@
+{
+  "type": "groupBy",
+  "select": [
+    {"name": "year", "expr": "\"20\" .. string.sub(edit_time, 0, 2)", "fields": ["edit_time"]},
+    {"name": "country"}
+  ],
+  "filter": {
+    "operator": "and",
+    "filters": [
+      {"operator": "greater", "column": "edit_time", "value": "16030000"},
+      {"operator": "less", "column": "edit_time", "value": "16040000"}
+    ]
+  }
+}

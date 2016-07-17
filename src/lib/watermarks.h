@@ -1,5 +1,5 @@
-#ifndef MAD_WATERMARKS_H
-#define MAD_WATERMARKS_H
+#ifndef _MAD_WATERMARKS_H_
+#define _MAD_WATERMARKS_H_
 
 #include <stdio.h>
 #include <stdint.h>
@@ -23,7 +23,7 @@ struct Watermarks {
 
   offset_t GetOffset(const DimCodeType& value) {
     auto i = prev(lower_bound(values.begin(), values.end(), value)) - values.begin();
-    return offsets[i < 0 ? 0 : i];
+    return i < 0 ? 0 : offsets[i];
   }
 
 #ifdef PERSIST
@@ -63,4 +63,4 @@ struct Watermarks {
 #endif /* PERSIST */
 };
 
-#endif /* MAD_WATERMARKS_H */
+#endif /* _MAD_WATERMARKS_H_ */

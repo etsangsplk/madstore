@@ -1,5 +1,5 @@
-#ifndef MAD_RECORDS_H
-#define MAD_RECORDS_H
+#ifndef _MAD_RECORDS_H_
+#define _MAD_RECORDS_H_
 
 #include <sys/stat.h>
 #include <unistd.h>
@@ -9,7 +9,7 @@
 #ifdef PERSIST
 # include <boost/interprocess/managed_mapped_file.hpp>
 #endif
-#include "../3rdparty/json.hpp"
+#include "json.hpp"
 
 using json = nlohmann::json;
 
@@ -163,4 +163,4 @@ struct InMemoryRecords {
   }
 };
 
-#endif /* MAD_RECORDS_H */
+#endif /* _MAD_RECORDS_H_ */

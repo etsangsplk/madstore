@@ -1,7 +1,8 @@
 #include <fstream>
-#include "../3rdparty/json.hpp"
+#include "json.hpp"
 #include "rest_api.h"
 #include "logger.h"
+#include "lua.h"
 
 using json = nlohmann::json;
 

@@ -25,7 +25,7 @@ When using persistence (`--enable-persistence` configure flag), you must also ha
 
 When using select expressions (`--enable-expressions` configure flag), you must also have:
 
- * [asmjit] >= 6467c73
+ * luajit >= 2.0.3
 
 To build the binary, run:
 
@@ -124,6 +124,30 @@ Query specification JSON file contains the query itself in a very intuitive form
   }
 }
 ```
+
+It's possible to use Lua expressions when selecting columns. For example:
+
+```javascript
+{
+  "type": "groupBy",
+  "select": [
+    {"name": "year", "expr": "\"20\" .. string.sub(edit_time, 0, 2)", "fields": ["edit_time"]},
+    {"name": "country"}
+  ],
+  "filter": {
+    "operator": "and",
+    "filters": [
+      {"operator": "greater", "column": "edit_time", "value": "16030000"},
+      {"operator": "less", "column": "edit_time", "value": "16040000"}
+    ]
+  }
+}
+```
+
+In the example above, new field called `year` is added, and it's computed using specified Lua expression and source fields (`edit_time` in this case).
+`country` field is selected as is as it has no expression defined. 
+
+The Lua function is cached after running a query for the first time, so invocation becomes faster starting from running it again for the second time.
 
 #### Getting Statistics
 

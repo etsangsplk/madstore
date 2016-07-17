@@ -1,5 +1,5 @@
-#ifndef MAD_SERIALIZERS_H
-#define MAD_SERIALIZERS_H
+#ifndef _MAD_SERIALIZERS_H_
+#define _MAD_SERIALIZERS_H_
 
 #include "types.h"
 
@@ -48,4 +48,4 @@ struct StringToDimCodeSerializer {
   }
 };
 
-#endif /* MAD_SERIALIZERS_H */
+#endif /* _MAD_SERIALIZERS_H_ */

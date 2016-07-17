@@ -2,7 +2,7 @@
 #include <sstream>
 #include <fstream>
 #include <errno.h>
-#include "../3rdparty/easylogging++.h"
+#include "easylogging++.h"
 #include "store_facade.h"
 #include "store_factory.h"
 

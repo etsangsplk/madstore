@@ -1,11 +1,11 @@
-#ifndef MAD_STORE_H
-#define MAD_STORE_H
+#ifndef _MAD_STORE_H_
+#define _MAD_STORE_H_
 
 #include <stdio.h>
 #include <stdint.h>
 #include <vector>
 #include <cstring>
-#include "../3rdparty/easylogging++.h"
+#include "easylogging++.h"
 #include "base.h"
 #include "iterables_map.h"
 #include "dims.h"
@@ -156,4 +156,4 @@ struct Store: BaseStore {
 #endif /* PERSIST */
 };
 
-#endif /* MAD_STORE_H */
+#endif /* _MAD_STORE_H_ */

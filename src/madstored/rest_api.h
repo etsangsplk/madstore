@@ -1,5 +1,5 @@
-#ifndef MAD_HTTP_H
-#define MAD_HTTP_H
+#ifndef _MAD_REST_API_
+#define _MAD_REST_API_
 
 #include <evhttp.h>
 #include "store_facade.h"
@@ -24,4 +24,4 @@ struct RestAPI {
   static void Handler(evhttp_request*, void*);
 };
 
-#endif /* MAD_HTTP_H */
+#endif /* _MAD_REST_API_ */

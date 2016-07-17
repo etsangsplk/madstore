@@ -1,5 +1,5 @@
-#ifndef MAD_QUERY_H
-#define MAD_QUERY_H
+#ifndef _MAD_QUERY_H_
+#define _MAD_QUERY_H_
 
 #include <stdexcept>
 #include <unordered_set>
@@ -7,10 +7,10 @@
 #include "iterables_map.h"
 #include "store.h"
 #include "materializer.h"
-#include "../3rdparty/json.hpp"
+#include "json.hpp"
 
 static inline void prefetch_range(const void *addr, size_t len) {
-#ifdef ARCH_HAS_PREFETCH
+#ifdef ARCH_H_AS_PREFETCH
   char *end = addr + len;
   for (char* cp = addr; cp < end; cp += PREFETCH_STRIDE)
     __builtin_prefetch(cp, 0, 0)
@@ -63,8 +63,8 @@ struct QueryEngine: BaseQueryEngine {
   struct GroupByQuery: Query {
     Materializer<Store>* materializer;
 
-    GroupByQuery(Store& store, Materializer<Store>* materializer, Records& records, Filter* filter):
-      materializer(materializer), Query(store, records, filter) {}
+    GroupByQuery(Store& store, json& query_spec, Records& records, Filter* filter):
+      materializer(Materializer<Store>::Create(store, query_spec)),Query(store, records, filter) {}
 
     ~GroupByQuery() {
       delete materializer;
@@ -339,8 +339,7 @@ struct QueryEngine: BaseQueryEngine {
       }
       std::string type = query_spec["type"];
       if (type == "groupBy") {
-        Materializer<Store>* materializer = Materializer<Store>::Create(store, query_spec);
-        return new GroupByQuery(store, materializer, records, filter);
+        return new GroupByQuery(store, query_spec, records, filter);
       }
       throw std::invalid_argument("Unknown query type: " + type);
     }
@@ -364,4 +363,4 @@ struct QueryEngine: BaseQueryEngine {
   }
 };
 
-#endif /* MAD_QUERY_H */
+#endif /* _MAD_QUERY_H_ */

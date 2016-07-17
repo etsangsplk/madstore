@@ -1,7 +1,7 @@
-#ifndef MAD_INPUT_SPEC_H
-#define MAD_INPUT_SPEC_H
+#ifndef _MAD_INPUT_SPEC_H_
+#define _MAD_INPUT_SPEC_H_
 
-#include "../3rdparty/json.hpp"
+#include "json.hpp"
 
 using json = nlohmann::json;
 
@@ -17,4 +17,4 @@ struct InputSpec {
   InputSpec(json& spec);
 };
 
-#endif /* MAD_INPUT_SPEC_H */
+#endif /* _MAD_INPUT_SPEC_H_ */

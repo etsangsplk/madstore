@@ -1,11 +1,11 @@
-#ifndef MAD_STORE_SPEC_H
-#define MAD_STORE_SPEC_H
+#ifndef _MAD_STORE_SPEC_H_
+#define _MAD_STORE_SPEC_H_
 
 #include <stdint.h>
 #include <algorithm>
 #include <vector>
 #include <stdexcept>
-#include "../3rdparty/json.hpp"
+#include "json.hpp"
 #include "dims.h"
 #include "metrics.h"
 #include "input_spec.h"
@@ -59,4 +59,4 @@ struct UpsertSpec {
   UpsertSpec(InputSpec& input_spec, StoreSpec& store_spec);
 };
 
-#endif /* MAD_STORE_SPEC_H */
+#endif /* _MAD_STORE_SPEC_H_ */

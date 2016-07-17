@@ -1,8 +1,8 @@
-#ifndef MAD_BASE_H
-#define MAD_BASE_H
+#ifndef _MAD_BASE_H_
+#define _MAD_BASE_H_
 
 #include "types.h"
-#include "../3rdparty/json.hpp"
+#include "json.hpp"
 
 struct UpsertSpec;
 
@@ -25,4 +25,4 @@ struct BaseStore {
 #endif
 };
 
-#endif /* MAD_BASE_H */
+#endif /* _MAD_BASE_H_ */

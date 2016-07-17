@@ -1,7 +1,7 @@
-#ifndef MAD_STORE_FACADE_H
-#define MAD_STORE_FACADE_H
+#ifndef _MAD_STORE_FACADE_H_
+#define _MAD_STORE_FACADE_H_
 
-#include "../3rdparty/json.hpp"
+#include "json.hpp"
 #include "store_spec.h"
 #include "base.h"
 
@@ -32,4 +32,4 @@ struct StoreFacade {
 #endif
 };
 
-#endif /* MAD_STORE_FACADE_H */
+#endif /* _MAD_STORE_FACADE_H_ */
