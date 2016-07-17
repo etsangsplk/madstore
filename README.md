@@ -3,6 +3,20 @@ madstore
 
 In-memory data store for dimensions and metrics.
 
+## Table of Contents
+
+ * [Features](#features)
+ * [How it works?](#how)
+ * [Usage](#usage)
+   * [Running](#running)
+   * [REST API](#restapi)
+     * [Loading data](#loading)
+     * [Querying](#querying)
+     * [Getting statistics](#stats)
+   * [Building](#building)
+   * [Testing](#testing)
+
+<a name="features">
 ## Features
 
  * REST API interface.
@@ -10,12 +24,15 @@ In-memory data store for dimensions and metrics.
  * Persistence to disk using memory mapped files.
  * Lua scripting for post-aggregation.
 
+<a name="how">
 ## How it works?
 
 The implementation is naive, though using mechanical sympathy can provide good query results in some cases.
 
+<a name="usage">
 ## Usage
 
+<a name="running">
 ### Running
 
 To run the madstore, pass store specification file as the only argument:
@@ -50,8 +67,10 @@ Explanation:
 * `port` is a REST API port number
 * `watermark_step` can be used bucketing records based on semi-oredered time series columns.
 
+<a name="restapi">
 ### REST API
 
+<a name="loading">
 #### Loading Data
 
 Loading data can be done using POST request to the `/api/load` endpoint. Example:
@@ -82,6 +101,7 @@ Input specification JSON file contains source information as well as column name
 
 * For now only TSV format is supported.
 
+<a name="querying">
 #### Querying Data
 
 Querying data can be done using POST request to the `/api/query` endpoint. Example:
@@ -128,6 +148,7 @@ In the example above, new field called `year` is added, and it's computed using 
 
 The Lua function is cached after running a query for the first time, so invocation becomes faster starting from running it again for the second time.
 
+<a name="stats">
 #### Getting Statistics
 
 To get store statistics, issue a GET query to the `/api/stats` endpoint, like this:
@@ -136,6 +157,7 @@ To get store statistics, issue a GET query to the `/api/stats` endpoint, like th
      
 The result will be returned in JSON format.
 
+<a name="building">
 ### Building
 
 You must have the following prerequisites:
@@ -160,6 +182,7 @@ To build the binary, run:
       ~$ ./configure
       ~$ make -j 4
 
+<a name="testing">
 ### Testing
 
 See [Examples](examples/README.md) section.
