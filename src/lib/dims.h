@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <vector>
 #include <cstring>
+#include <memory>
 #include <google/dense_hash_map>
 #include "easylogging++.h"
 #include "json.hpp"
@@ -140,7 +141,7 @@ struct DimDict {
   bool SaveToFile(FILE* fp) {
     TIMED_SCOPE(timerObj, "saving dictionary");
 
-    unique_ptr<char[]> buf = make_unique<char[]>(Dim::SIZE_LIMIT+1);
+    std::unique_ptr<char[]> buf = std::make_unique<char[]>(Dim::SIZE_LIMIT+1);
     StringToDimCodeSerializer serializer(buf.get());
     for (uint8_t i = 0; i < DimsCount; ++i) {
       auto & cv = code_to_value[i];
@@ -164,7 +165,7 @@ struct DimDict {
   bool LoadFromFile(FILE* fp) {
     TIMED_SCOPE(timerObj, "loading dictionary");
 
-    unique_ptr<char[]> buf = make_unique<char[]>(Dim::SIZE_LIMIT+1);
+    std::unique_ptr<char[]> buf = std::make_unique<char[]>(Dim::SIZE_LIMIT+1);
     StringToDimCodeSerializer serializer(buf.get());
     for (uint8_t i = 0; i < DimsCount; ++i) {
       auto & cv = code_to_value[i];

@@ -39,7 +39,7 @@ AC_ARG_ENABLE([persistence],
 AS_IF([test "x$enable_persistence" = "xyes"], [
   AC_DEFINE([PERSIST], [1])
   AC_CHECK_LIB([boost_system], [main], [],
-              [AC_MSG_ERROR([boost not found. Run: sudo apt-get install libboost-dev])])
+              [AC_MSG_ERROR([boost system not found. Run: sudo apt-get install libboost-system-dev])])
   AC_SUBST([MADSTORED_LDADD], [-pthread])
 ])
 
