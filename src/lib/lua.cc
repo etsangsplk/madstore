@@ -1,9 +1,11 @@
 #include "lua.h"
-#include "MurmurHash3.h"
+#include "murmur3.h"
+#include "easylogging++.h"
 
 LuaFunction::LuaFunction(std::string function, std::vector<std::string> arg_names)
   :arg_names(std::move(arg_names)),state(std::unique_ptr<lua_State, LuaDeleter>(luaL_newstate())) {
 
+  TIMED_SCOPE(timerObj, "compiling Lua function");
   auto L = state.get();
   luaL_openlibs(L);
   CheckResult(luaL_loadstring(L, ("return " + function).c_str()));
@@ -48,3 +50,6 @@ const LuaFunction& Lua::Compile(std::string function, std::vector<std::string> a
   functions[hash] = std::make_unique<LuaFunction>(function, arg_names);
   return *functions[hash].get();
 }
+
+Lua Lua::instance;
+

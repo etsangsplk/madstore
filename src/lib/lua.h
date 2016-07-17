@@ -31,6 +31,8 @@ class Lua {
     std::map<uint32_t, std::unique_ptr<LuaFunction>> functions;
 
   public:
+    static Lua instance;
+
     Lua() {}
     Lua(const Lua& other) = delete;
     ~Lua() {}

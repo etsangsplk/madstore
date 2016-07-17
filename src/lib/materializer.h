@@ -3,9 +3,12 @@
 
 #include <vector>
 #include <string>
-#include <set>
+#include <map>
+#include <unordered_set>
+#include "easylogging++.h"
 #include "json.hpp"
 #include "store.h"
+
 #ifdef EXPRESSIONS
 # include "lua.h"
 #endif
@@ -62,6 +65,8 @@ struct ColumnsMaterializer: Materializer<Store> {
   }
 
   void Materialize(typename Materializer<Store>::GroupedMetrics& grouped_metrics, typename Materializer<Store>::Result& result) {
+    TIMED_SCOPE(timerObj, "materializing results");
+
     auto dims_count = Materializer<Store>::column_indices.size();
     for (const auto & r : grouped_metrics) {
       std::vector<std::string> v(dims_count);
@@ -81,7 +86,6 @@ struct ColumnsMaterializer: Materializer<Store> {
 template<typename Store>
 struct SelectMaterializer: Materializer<Store> {
 
-  Lua lua;
   Store& store;
   std::vector<std::string> output_columns;
   std::vector<const LuaFunction*> functions;
@@ -94,7 +98,7 @@ struct SelectMaterializer: Materializer<Store> {
     std::vector<std::vector<std::string>> arg_names;
     arg_names.resize(select.size());
 
-    std::set<std::string> columns_set;
+    std::unordered_set<std::string> columns_set;
     uint8_t column_index = 0;
     for (auto s : select) {
       const std::string& name = s["name"];
@@ -102,7 +106,7 @@ struct SelectMaterializer: Materializer<Store> {
 
       if (s.find("expr") != s.end()) {
         std::vector<std::string> select_fields = s["fields"].get<std::vector<std::string>>();
-        functions[column_index] = &lua.Compile(s["expr"], select_fields);
+        functions[column_index] = &Lua::instance.Compile(s["expr"], select_fields);
         arg_names[column_index] = select_fields;
         columns_set.insert(select_fields.begin(), select_fields.end());
       } else {
@@ -129,6 +133,8 @@ struct SelectMaterializer: Materializer<Store> {
   }
 
   void Materialize(typename Materializer<Store>::GroupedMetrics& grouped_metrics, typename Materializer<Store>::Result& result) {
+    TIMED_SCOPE(timerObj, "materializing results");
+
     std::map<std::vector<std::string>, typename Store::Metrics> post_agg;
     auto columns_num = output_columns.size();
     for (const auto & r : grouped_metrics) {
@@ -165,6 +171,7 @@ struct SelectMaterializer: Materializer<Store> {
     return output_columns;
   }
 };
+
 #endif /* EXPRESSIONS */
 
 #endif /* _MAD_MATERIALIZER_H_ */
