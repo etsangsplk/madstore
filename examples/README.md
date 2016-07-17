@@ -30,6 +30,10 @@ The following query returns events from April 2016, aggregated by edit time and 
 
      ~$ curl -v -X POST -d@query.json http://localhost:5555/api/query
 
+The following query uses Lua expression for aggregating results by edit year and country:
+
+     ~$ curl -v -X POST -d@query-expr.json http://localhost:5555/api/query
+
 ### Getting Statistics
 
      ~$ curl -sS http://localhost:5555/api/stats
