@@ -3,39 +3,18 @@ madstore
 
 In-memory data store for dimensions and metrics.
 
+## Features
+
+ * REST API interface.
+ * Sum aggregation by dimensions (columns) set.
+ * Persistence to disk using memory mapped files.
+ * Lua scripting for post-aggregation.
+
 ## How it works?
 
 The implementation is naive, though using mechanical sympathy can provide good query results in some cases.
 
 ## Usage
-
-### Building
-
-You must have the following prerequisites:
-
- * Autoconf >= 2.69
- * Automake >= 1.14
- * C++14 compiler (g++ >= 5.1 or clang++ >= 3.5.x)
- * libevent >= 2.0
- * sparsehash >= 2.0
-
-When using persistence (`--enable-persistence` configure flag), you must also have:
-
- * Boost System >= 1.55
-
-When using select expressions (`--enable-expressions` configure flag), you must also have:
-
- * luajit >= 2.0.3
-
-To build the binary, run:
-
-      ~$ ./buildconf.sh
-      ~$ ./configure
-      ~$ make -j 4
-
-### Testing
-
-See [Examples](examples/README.md) section.
 
 ### Running
 
@@ -124,6 +103,34 @@ Query specification JSON file contains the query itself in a very intuitive form
   }
 }
 ```
+
+### Building
+
+You must have the following prerequisites:
+
+ * Autoconf >= 2.69
+ * Automake >= 1.14
+ * C++14 compiler (g++ >= 5.1 or clang++ >= 3.5.x)
+ * libevent >= 2.0
+ * sparsehash >= 2.0
+
+When using persistence (`--enable-persistence` configure flag), you must also have:
+
+ * Boost System >= 1.55
+
+When using select expressions (`--enable-expressions` configure flag), you must also have:
+
+ * luajit >= 2.0.3
+
+To build the binary, run:
+
+      ~$ ./buildconf.sh
+      ~$ ./configure
+      ~$ make -j 4
+
+### Testing
+
+See [Examples](examples/README.md) section.
 
 It's possible to use Lua expressions when selecting columns. For example:
 
