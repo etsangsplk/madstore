@@ -146,7 +146,7 @@ It's possible to use Lua expressions when selecting columns. For example:
 In the example above, new field called `year` is added, and it's computed using specified Lua expression and source fields (`edit_time` in this case).
 `country` field is selected as is as it has no expression defined. 
 
-The Lua function is cached after running a query for the first time, so invocation becomes faster starting from running it again for the second time.
+Lua functions are compiled using JIT compiler, and cached after running a query for the first time, so invocation becomes faster starting from running it again for the second time.
 
 <a name="stats">
 #### Getting Statistics
