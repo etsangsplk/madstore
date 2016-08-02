@@ -24,6 +24,9 @@ AC_ARG_ENABLE([expressions],
 AS_IF([test "x$enable_expressions" = "xyes"], [
   PKG_CHECK_MODULES([luajit], [luajit >= 2.0])
   AC_DEFINE([EXPRESSIONS], [1])
+  AM_CONDITIONAL([EXPRESSIONS], [true])
+], [
+  AM_CONDITIONAL([EXPRESSIONS], [false])
 ])
 
 AC_ARG_WITH([dims-x],
