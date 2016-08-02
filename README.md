@@ -3,40 +3,36 @@ madstore
 
 In-memory data store for dimensions and metrics.
 
+## Table of Contents
+
+ * [Features](#features)
+ * [How it works?](#how)
+ * [Usage](#usage)
+   * [Running](#running)
+   * [REST API](#restapi)
+     * [Loading data](#loading)
+     * [Querying](#querying)
+     * [Getting statistics](#stats)
+   * [Building](#building)
+   * [Testing](#testing)
+
+<a name="features">
+## Features
+
+ * REST API interface.
+ * Sum aggregation by dimensions (columns) set.
+ * Persistence to disk using memory mapped files.
+ * Lua scripting for post-aggregation.
+
+<a name="how">
 ## How it works?
 
 The implementation is naive, though using mechanical sympathy can provide good query results in some cases.
 
+<a name="usage">
 ## Usage
 
-### Building
-
-You must have the following prerequisites:
-
- * Autoconf >= 2.69
- * Automake >= 1.14
- * C++14 compiler (g++ >= 5.1 or clang++ >= 3.5.x)
- * libevent >= 2.0
- * sparsehash >= 2.0
-
-When using persistence (`--enable-persistence` configure flag), you must also have:
-
- * Boost System >= 1.55
-
-When using select expressions (`--enable-expressions` configure flag), you must also have:
-
- * luajit >= 2.0.3
-
-To build the binary, run:
-
-      ~$ ./buildconf.sh
-      ~$ ./configure
-      ~$ make -j 4
-
-### Testing
-
-See [Examples](examples/README.md) section.
-
+<a name="running">
 ### Running
 
 To run the madstore, pass store specification file as the only argument:
@@ -71,8 +67,10 @@ Explanation:
 * `port` is a REST API port number
 * `watermark_step` can be used bucketing records based on semi-oredered time series columns.
 
+<a name="restapi">
 ### REST API
 
+<a name="loading">
 #### Loading Data
 
 Loading data can be done using POST request to the `/api/load` endpoint. Example:
@@ -103,6 +101,7 @@ Input specification JSON file contains source information as well as column name
 
 * For now only TSV format is supported.
 
+<a name="querying">
 #### Querying Data
 
 Querying data can be done using POST request to the `/api/query` endpoint. Example:
@@ -147,8 +146,9 @@ It's possible to use Lua expressions when selecting columns. For example:
 In the example above, new field called `year` is added, and it's computed using specified Lua expression and source fields (`edit_time` in this case).
 `country` field is selected as is as it has no expression defined. 
 
-The Lua function is cached after running a query for the first time, so invocation becomes faster starting from running it again for the second time.
+Lua functions are compiled using JIT compiler, and cached after running a query for the first time, so invocation becomes faster starting from running it again for the second time.
 
+<a name="stats">
 #### Getting Statistics
 
 To get store statistics, issue a GET query to the `/api/stats` endpoint, like this:
@@ -157,6 +157,35 @@ To get store statistics, issue a GET query to the `/api/stats` endpoint, like th
      
 The result will be returned in JSON format.
 
+<a name="building">
+### Building
+
+You must have the following prerequisites:
+
+ * Autoconf >= 2.69
+ * Automake >= 1.14
+ * C++14 compiler (g++ >= 5.1 or clang++ >= 3.5.x)
+ * libevent >= 2.0
+ * sparsehash >= 2.0
+
+When using persistence (`--enable-persistence` configure flag), you must also have:
+
+ * Boost System >= 1.55
+
+When using select expressions (`--enable-expressions` configure flag), you must also have:
+
+ * luajit >= 2.0.3
+
+To build the binary, run:
+
+      ~$ ./buildconf.sh
+      ~$ ./configure
+      ~$ make -j 4
+
+<a name="testing">
+### Testing
+
+See [Examples](examples/README.md) section.
 
 [asmjit]:https://github.com/kobalicek/asmjit
 
