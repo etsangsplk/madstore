@@ -105,7 +105,7 @@ struct PersistentRecords {
    * Updates record using global offset
    */
   inline void UpdateRecord(offset_t offset, const Metrics& metrics) {
-    (*volumes[offset / volumes.size()])[offset % volumes.size()].second += metrics;
+    (*volumes[offset / VOLUME_SIZE])[offset % VOLUME_SIZE].second += metrics;
   }
 
   void GetStats(json& stats) {

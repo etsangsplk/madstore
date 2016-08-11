@@ -135,12 +135,15 @@ struct SelectMaterializer: Materializer<Store> {
   void Materialize(typename Materializer<Store>::GroupedMetrics& grouped_metrics, typename Materializer<Store>::Result& result) {
     TIMED_SCOPE(timerObj, "materializing results");
 
-    std::map<std::vector<std::string>, typename Store::Metrics> post_agg;
     auto columns_num = output_columns.size();
+    auto select_columns_num = Materializer<Store>::column_indices.size();
+
+    std::map<std::vector<std::string>, typename Store::Metrics> post_agg;
     for (const auto & r : grouped_metrics) {
       auto& dim_codes = r.first;
-      std::vector<std::string> values(columns_num);
-      for (int column_idx = 0; column_idx < columns_num; ++column_idx) {
+
+      std::vector<std::string> values(select_columns_num);
+      for (int column_idx = 0; column_idx < select_columns_num; ++column_idx) {
         store.dict.Decode(Materializer<Store>::column_indices[column_idx], dim_codes[column_idx], values[column_idx]);
       }
 

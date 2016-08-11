@@ -31,7 +31,11 @@ struct StoreSpec {
   inline void GetDimIndices(std::vector<std::string>& columns, std::vector<uint8_t>& indices) {
     indices.reserve(columns.size());
     for (auto & c : columns) {
-      indices.push_back(GetDimIndex(c));
+      auto index = GetDimIndex(c);
+      if (index == -1) {
+        throw std::invalid_argument("Column doesn't exist: " + c);
+      }
+      indices.push_back(index);
     }
   }
 
