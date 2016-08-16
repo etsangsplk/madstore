@@ -14,6 +14,7 @@ In-memory data store for dimensions and metrics.
      * [Querying](#querying)
      * [Getting statistics](#stats)
    * [Building](#building)
+     * [Configuration options](#configure)
    * [Testing](#testing)
 
 <a name="features">
@@ -167,10 +168,7 @@ You must have the following prerequisites:
  * C++14 compiler (g++ >= 5.1 or clang++ >= 3.5.x)
  * libevent >= 2.0
  * sparsehash >= 2.0
-
-When using persistence (`--enable-persistence` configure flag), you must also have:
-
- * Boost System >= 1.55
+ * Boost >= 1.55 (required modules: system, thread, filesystem, datetime)
 
 When using select expressions (`--enable-expressions` configure flag), you must also have:
 
@@ -181,6 +179,16 @@ To build the binary, run:
       ~$ ./buildconf.sh
       ~$ ./configure
       ~$ make -j 4
+
+<a name="configure">
+#### Configuration options
+Option               | Description
+-------------------- | ------------
+--enable-persistence | Persist data to disk. For now, persisting dictionaries must be invoked explicitly using `/api/persist` POST request.
+--enable-expressions | Allow using Lua scripts for query post-processing.
+--with-dims-x=NUM    | Allowed dimensions number multiplier (for x=1 number of allowed dimensions: 1 to 10, for x=2: 10 to 20, etc).
+--with-metrics-x=NUM | Allowed metrics number multiplier (for x=1 number of allowed metrics: 1 to 5, for x=2: 5 to 10, etc).
+
 
 <a name="testing">
 ### Testing
