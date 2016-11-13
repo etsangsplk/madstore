@@ -78,18 +78,16 @@ struct QueryEngine: BaseQueryEngine {
       grouped_metrics.set_empty_key(empty);
 
       offset_t start_offset = 0;
-      if (Query::filter != nullptr) {
-        std::vector<offset_t> watermark_offsets;
-        watermark_offsets.reserve(DIMS_COUNT);
-        for (uint8_t d = 0; d < DIMS_COUNT; ++d) {
-          const DimCodeType& watermark_value = Query::filter->watermark_vals[d];
-          if (watermark_value > 0) {
-            watermark_offsets.push_back(Query::store.watermarks[d].GetOffset(watermark_value));
-          }
+      std::vector<offset_t> watermark_offsets;
+      watermark_offsets.reserve(DIMS_COUNT);
+      for (uint8_t d = 0; d < DIMS_COUNT; ++d) {
+        const DimCodeType& watermark_value = Query::filter->watermark_vals[d];
+        if (watermark_value > 0) {
+          watermark_offsets.push_back(Query::store.watermarks[d].GetOffset(watermark_value));
         }
-        if (!watermark_offsets.empty()) {
-          start_offset = *std::min_element(watermark_offsets.begin(), watermark_offsets.end());
-        }
+      }
+      if (!watermark_offsets.empty()) {
+        start_offset = *std::min_element(watermark_offsets.begin(), watermark_offsets.end());
       }
 
       auto volumes = Query::records.GetVolumes(start_offset);
@@ -101,7 +99,7 @@ struct QueryEngine: BaseQueryEngine {
         for (; offset < records_num; ++offset) {
           const auto & record = (*records)[offset];
           const auto & row_dims = record.first;
-          if (!Query::filter || Query::filter->Apply(row_dims)) {
+          if (Query::filter->Apply(row_dims)) {
             std::vector<DimCodeType> v(dims_count);
             for (uint8_t i = 0; i < dims_count; ++i) {
               v[i] = row_dims[column_indices[i]];
@@ -332,11 +330,11 @@ struct QueryEngine: BaseQueryEngine {
     QueryBuilder(Store &store, Records& records): store(store),records(records) {}
 
     Query* Build(json& query_spec) {
-      Filter* filter = nullptr;
-      if (query_spec.find("filter") != query_spec.end()) {
-        FilterBuilder filter_builder(store);
-        filter = filter_builder.Build(query_spec["filter"]);
+      if (query_spec.find("filter") == query_spec.end()) {
+        throw std::invalid_argument("Filter must be specified");
       }
+      FilterBuilder filter_builder(store);
+      Filter* filter = filter_builder.Build(query_spec["filter"]);
       std::string type = query_spec["type"];
       if (type == "groupBy") {
         return new GroupByQuery(store, query_spec, records, filter);

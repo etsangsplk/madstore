@@ -24,12 +24,19 @@ void StoreFacade::Read(InputSpec& spec) {
     throw std::runtime_error("Input file not accessible: " + spec.file);
   }
 
-  std::vector<std::string> values(spec.columns.size());
+  auto columns_num = spec.columns.size();
+  std::vector<std::string> values(columns_num);
   for (std::string row; std::getline(input, row, spec.row_delimiter); ) {
     std::istringstream ss(row);
     size_t i = 0;
     for (std::string value; std::getline(ss, value, spec.field_delimiter); ) {
-      values[i++] = value;
+      if (i >= columns_num) {
+        if (!spec.skip_bad_rows) {
+          throw std::runtime_error("Wrong input row (number of columns doesn't match schema):\n" + row);
+        }
+      } else {
+        values[i++] = value;
+      }
     }
     Upsert(upsert_spec, values);
   }

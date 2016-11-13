@@ -31,11 +31,15 @@ struct Store: BaseStore {
   using Records = InMemoryRecords<Record,Metrics>;
 #endif
 
+  //struct Bucket {
+    Records records;
+    IterablesMap<DimCodes,offset_t> record_offsets;
+    std::array<Watermarks,DimsCount> watermarks;
+  //};
+
   StoreSpec& spec;
-  Records records;
-  IterablesMap<DimCodes,offset_t> record_offsets;
   DimDict<DimsCount> dict;
-  std::array<Watermarks,DimsCount> watermarks;
+  //std::vector<std::unique_ptr<Bucket>> buckets;
 
   Store(StoreSpec& spec):spec(spec),dict(spec.dims) {
     DimCodes empty;

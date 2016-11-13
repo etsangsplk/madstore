@@ -17,10 +17,10 @@ AC_CHECK_HEADER([dense_hash_set], [],
                 [AC_MSG_ERROR([sparsehash not found. Run: sudo apt-get install libsparsehash-dev])])
 
 AC_CHECK_LIB([boost_system], [main], [],
-            [AC_MSG_ERROR([boost system not found. Run: sudo apt-get install libboost-system-dev])])
+             [AC_MSG_ERROR([boost system not found. Run: sudo apt-get install libboost-system-dev])])
 
 AC_CHECK_LIB([boost_thread], [main], [],
-            [AC_MSG_ERROR([boost thread not found. Run: sudo apt-get install libboost-thread-dev])])
+             [AC_MSG_ERROR([boost thread not found. Run: sudo apt-get install libboost-thread-dev])])
 
 AC_CHECK_LIB([boost_filesystem], [main], [],
              [AC_MSG_ERROR([boost filesystem not found. Run: sudo apt-get install libboost-filesystem-dev])])

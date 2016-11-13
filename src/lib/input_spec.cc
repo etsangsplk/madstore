@@ -16,5 +16,8 @@ InputSpec::InputSpec(json& spec):field_delimiter('\t'),row_delimiter('\n') {
   } else {
     throw std::invalid_argument("Unsupported format: " + std::to_string(format));
   }
+  if (spec.find("skip_bad_rows") != spec.end()) {
+    skip_bad_rows = spec["skip_bad_rows"];
+  }
 }
 

@@ -24,6 +24,11 @@ StoreSpec::StoreSpec(json& spec) {
     }
     metrics.push_back(Metric(type, column["name"]));
   }
+
+  if (spec.find("partition_by") != spec.end()) {
+    std::string partition_column = spec["partition_by"];
+    partition_dim = GetDimIndex(partition_column);
+  }
 }
 
 UpsertSpec::UpsertSpec(InputSpec& input_spec, StoreSpec& store_spec) {

@@ -15,6 +15,7 @@ using json = nlohmann::json;
 struct StoreSpec {
   std::vector<Dim> dims;
   std::vector<Metric> metrics;
+  int partition_dim = -1;
 
   StoreSpec(json& spec);
   inline uint8_t DimsCount() { return dims.size(); }

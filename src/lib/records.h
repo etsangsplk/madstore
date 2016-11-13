@@ -25,13 +25,14 @@ struct PersistentRecords {
   using MappedFileAllocator = bi::allocator<Record, bi::managed_mapped_file::segment_manager>;
   using RecordsVector = std::vector<Record, MappedFileAllocator>;
 
-  const unsigned long FILE_SIZE = 2ul<<30; // 2GB
-  const offset_t VOLUME_SIZE = FILE_SIZE/sizeof(Record) - 1024;
-
+  const unsigned long file_size;
+  const offset_t volume_size;
   std::vector<bi::managed_mapped_file*> segments;
   std::vector<RecordsVector*> volumes;
 
-  PersistentRecords() {
+  PersistentRecords(unsigned long file_size = 2ul<<30)
+    :file_size(file_size), volume_size(file_size / sizeof(Record) - 1024) {
+
     for (int i = 1; ; ++i) {
       std::ostringstream filebuf;
       filebuf<<"records"<<i<<".mad";
@@ -64,14 +65,14 @@ struct PersistentRecords {
     std::ostringstream filebuf;
     filebuf<<"records"<<segments.size() + 1<<".mad";
     std::string file = filebuf.str();
-    auto segment = new bi::managed_mapped_file(bi::create_only, file.c_str(), FILE_SIZE);
+    auto segment = new bi::managed_mapped_file(bi::create_only, file.c_str(), file_size);
     segments.push_back(segment);
     auto volume = segment->find_or_construct<RecordsVector>("records")(segment->get_segment_manager());
-    volume->reserve(VOLUME_SIZE);
+    volume->reserve(volume_size);
     volumes.push_back(volume);
     CLOG(INFO, "Store")
       <<"Created volume "<<static_cast<void*>(volume)
-      <<" ("<<file<<") for storing "<<VOLUME_SIZE<<" records";
+      <<" ("<<file<<") for storing "<<volume_size<<" records";
   }
 
   /**
@@ -82,9 +83,9 @@ struct PersistentRecords {
     std::vector<std::pair<offset_t,RecordsVector*>> result;
     result.reserve(volumes_num);
     for (int i = 0; i < volumes_num; ++i) {
-      if (start_offset <= (i + 1) * VOLUME_SIZE) {
+      if (start_offset <= (i + 1) * volume_size) {
         result.push_back(std::pair<offset_t,RecordsVector*>(
-              result.empty() ? start_offset - i * VOLUME_SIZE : 0, volumes[i]));
+              result.empty() ? start_offset - i * volume_size : 0, volumes[i]));
       } 
     }
     return result;
@@ -98,14 +99,14 @@ struct PersistentRecords {
       AddSegment();
     }
     volumes.back()->push_back(record);
-    return (VOLUME_SIZE * (volumes.size() - 1)) + volumes.back()->size() - 1;
+    return (volume_size * (volumes.size() - 1)) + volumes.back()->size() - 1;
   }
 
   /**
    * Updates record using global offset
    */
   inline void UpdateRecord(offset_t offset, const Metrics& metrics) {
-    (*volumes[offset / VOLUME_SIZE])[offset % VOLUME_SIZE].second += metrics;
+    (*volumes[offset / volume_size])[offset % volume_size].second += metrics;
   }
 
   void GetStats(json& stats) {
