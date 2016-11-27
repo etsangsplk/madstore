@@ -1,0 +1,20 @@
+#include <stdexcept>
+#include "store.h"
+#include "store_factory.h"
+#include "store_spec.h"
+#include "query.h"
+
+BaseStore* StoreFactory::Create(StoreSpec& store_spec) {
+
+  size_t dims_count = store_spec.DimsCount();
+  size_t metrics_count = store_spec.MetricsCount();
+
+  if (dims_count == {{ dims }} && metrics_count == {{ metrics }}) {
+    return new Store<{{ dims }},{{ metrics }}>(store_spec);
+  }
+
+  throw std::invalid_argument(
+      "This store supports {{ dims }} dimensions and {{ metrics }} metrics exactly"
+  );
+}
+

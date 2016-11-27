@@ -6,6 +6,7 @@ config.sub
 *.a
 *.mad
 .deps/
+src/lib/store_factory.cc
 src/madstored/madstored
 examples/*.tsv
 

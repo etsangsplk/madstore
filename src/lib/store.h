@@ -20,26 +20,23 @@ template<uint8_t DimsCount,uint8_t MetricsCount>
 struct Store: BaseStore {
 
   static const uint8_t DIMS_COUNT = DimsCount;
-  static constexpr char const* FILE_NAME = "meta.mad";
 
   using DimCodes = std::array<DimCodeType,DimsCount>;
   using Metrics = MetricsArray<MetricsCount>;
   using Record = std::pair<DimCodes,Metrics>;
 #ifdef PERSIST
+  static constexpr char const* FILE_NAME = "meta.mad";
   using Records = PersistentRecords<Record,Metrics>;
 #else
   using Records = InMemoryRecords<Record,Metrics>;
 #endif
 
-  //struct Bucket {
-    Records records;
-    IterablesMap<DimCodes,offset_t> record_offsets;
-    std::array<Watermarks,DimsCount> watermarks;
-  //};
+  Records records;
+  IterablesMap<DimCodes,offset_t> record_offsets;
+  std::array<Watermarks,DimsCount> watermarks;
 
   StoreSpec& spec;
   DimDict<DimsCount> dict;
-  //std::vector<std::unique_ptr<Bucket>> buckets;
 
   Store(StoreSpec& spec):spec(spec),dict(spec.dims) {
     DimCodes empty;

@@ -169,6 +169,7 @@ You must have the following prerequisites:
  * libevent >= 2.0
  * sparsehash >= 2.0
  * Boost >= 1.55 (required modules: system, thread, filesystem, datetime)
+ * Python 2.7 with Jinja2 >= 2.1
 
 When using select expressions (`--enable-expressions` configure flag), you must also have:
 
@@ -186,8 +187,11 @@ Option               | Description
 -------------------- | ------------
 --enable-persistence | Persist data to disk. For now, persisting dictionaries must be invoked explicitly using `/api/persist` POST request.
 --enable-expressions | Allow using Lua scripts for query post-processing.
---with-dims-x=NUM    | Allowed dimensions number multiplier (for x=1 number of allowed dimensions: 1 to 10, for x=2: 10 to 20, etc).
---with-metrics-x=NUM | Allowed metrics number multiplier (for x=1 number of allowed metrics: 1 to 5, for x=2: 5 to 10, etc).
+--with-dims=NUM      | Number of dimensions this store supports (default: 10).
+--with-metrics=NUM   | Number of metrics this store supports (default: 5).
+
+Number of supported dimensions and metrics is configured in compile time for performance reasons. To change defaults, use
+`--with-dims` and `--with-metrics` configuration options respectively.
 
 
 <a name="testing">
