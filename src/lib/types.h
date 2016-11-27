@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-using MetricType = unsigned long;
+using MetricType = double;
 
 /* This allows dimension cardinality for up to 2^32 */
 using DimCodeType = uint32_t;

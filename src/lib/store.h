@@ -69,7 +69,7 @@ struct Store: BaseStore {
       dims[dim_idx++] = values[dim_column];
     }
     for (auto metric_column : spec.metric_cols) {
-      metrics[metric_idx++] = stoi(values[metric_column]);
+      metrics[metric_idx++] = stod(values[metric_column]);
     }
 
     DimCodes codes;

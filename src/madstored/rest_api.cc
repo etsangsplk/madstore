@@ -6,6 +6,7 @@
 #include "rest_api.h"
 #include "easylogging++.h"
 #include "json.hpp"
+#include "../lib/types.h"
 
 using json = nlohmann::json;
 
@@ -15,7 +16,7 @@ void RestAPI::Start() {
       query_pool->push([=](int id) {
         try {
           json query = json::parse(request->content.string());
-          std::vector<std::pair<std::vector<std::string>,std::vector<unsigned long>>> result;
+          std::vector<std::pair<std::vector<std::string>,std::vector<MetricType>>> result;
           store.RunQuery(query, result);
           std::ostringstream os;
           for (const auto & row : result) {
