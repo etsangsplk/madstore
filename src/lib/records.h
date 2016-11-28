@@ -25,17 +25,18 @@ struct PersistentRecords {
   using MappedFileAllocator = bi::allocator<Record, bi::managed_mapped_file::segment_manager>;
   using RecordsVector = std::vector<Record, MappedFileAllocator>;
 
+  std::string table;
   const unsigned long file_size;
   const offset_t volume_size;
   std::vector<bi::managed_mapped_file*> segments;
   std::vector<RecordsVector*> volumes;
 
-  PersistentRecords(unsigned long file_size = 2ul<<30)
-    :file_size(file_size), volume_size(file_size / sizeof(Record) - 1024) {
+  PersistentRecords(std::string& table, unsigned long file_size = 2ul<<30)
+    :table(table),file_size(file_size),volume_size(file_size / sizeof(Record) - 1024) {
 
     for (int i = 1; ; ++i) {
       std::ostringstream filebuf;
-      filebuf<<"records"<<i<<".mad";
+      filebuf<<table<<"/records"<<i<<".mad";
       std::string file = filebuf.str();
       if (access(file.c_str(), F_OK) == -1) {
         break;
@@ -62,8 +63,12 @@ struct PersistentRecords {
    * Create new memory mapped file, and create a new records vector based on it
    */
   void AddSegment() {
+    struct stat st = {0};
+    if (stat(table.c_str(), &st) == -1) {
+      mkdir(table.c_str(), 0755);
+    }
     std::ostringstream filebuf;
-    filebuf<<"records"<<segments.size() + 1<<".mad";
+    filebuf<<table<<"/records"<<segments.size() + 1<<".mad";
     std::string file = filebuf.str();
     auto segment = new bi::managed_mapped_file(bi::create_only, file.c_str(), file_size);
     segments.push_back(segment);
@@ -132,6 +137,8 @@ template<typename Record,typename Metrics>
 struct InMemoryRecords {
 
   std::vector<Record> records;
+
+  InMemoryRecords(std::string& table) {}
 
   std::vector<std::pair<offset_t,std::vector<Record>*>> GetVolumes(offset_t start_offset) {
     std::vector<std::pair<offset_t,std::vector<Record>*>> result;

@@ -15,7 +15,7 @@ int main(int argc, char** argv) {
 
   json store_spec_json = json::parse(std::ifstream(argv[1]));
   StoreSpec store_spec(store_spec_json);
-  StoreFacade store(store_spec);
+  Store store(store_spec);
 
   RestAPI rest_api(store_spec_json["port"], store);
   rest_api.Start();

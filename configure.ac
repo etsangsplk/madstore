@@ -42,15 +42,10 @@ AS_IF([test "x$enable_expressions" = "xyes"], [
   AM_CONDITIONAL([EXPRESSIONS], [false])
 ])
 
-AC_ARG_WITH([dims],
-            AS_HELP_STRING([--with-dims=NUM], [number of dimensions (default: 10)]),
-            [DIMS="$withval"], [DIMS=10])
-AC_SUBST(DIMS)
-
-AC_ARG_WITH([metrics],
-            AS_HELP_STRING([--with-metrics=NUM], [number of metrics (default: 5)]),
-            [METRICS="$withval"], [METRICS=5])
-AC_SUBST(METRICS)
+AC_ARG_WITH([tables], AS_HELP_STRING([--with-tables=DxM,...],
+            [supported tables in terms of dimensions and metrics number (default: 10x5)]),
+            [TABLES="$withval"], [TABLES="10x5"])
+AC_SUBST(TABLES)
 
 AC_ARG_ENABLE([persistence],
               AS_HELP_STRING([--enable-persistence], [enable saving memory snapshot to disk]))

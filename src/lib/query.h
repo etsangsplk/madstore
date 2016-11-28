@@ -5,7 +5,7 @@
 #include <unordered_set>
 #include <algorithm>
 #include "iterables_map.h"
-#include "store.h"
+#include "table.h"
 #include "materializer.h"
 #include "json.hpp"
 
@@ -19,40 +19,40 @@ static inline void prefetch_range(const void *addr, size_t len) {
 
 using json = nlohmann::json;
 
-template<typename Store>
+template<typename Table>
 struct QueryEngine: BaseQueryEngine {
 
-  static const auto DIMS_COUNT = Store::DIMS_COUNT;
+  static const auto DIMS_COUNT = Table::DIMS_COUNT;
 
-  using DimCodes = typename Store::DimCodes;
-  using Metrics = typename Store::Metrics;
-  using Record = typename Store::Record;
-  using Records = typename Store::Records;
+  using DimCodes = typename Table::DimCodes;
+  using Metrics = typename Table::Metrics;
+  using Record = typename Table::Record;
+  using Records = typename Table::Records;
   using Result = std::vector<std::pair<std::vector<std::string>,Metrics>>;
   using GroupedMetrics = IterablesMap<std::vector<DimCodeType>,Metrics>;
 
-  Store& store;
+  Table& table;
   Records& records;
 
-  QueryEngine(Store& store, Records& records):store(store),records(records) {}
+  QueryEngine(Table& table, Records& records):table(table),records(records) {}
 
   struct Filter {
-    Store &store;
+    Table &table;
     std::array<DimCodeType,DIMS_COUNT> watermark_vals;
 
-    Filter(Store& store): store(store), watermark_vals({}) {}
+    Filter(Table& table): table(table), watermark_vals({}) {}
     virtual ~Filter() {}
     virtual bool Apply(const DimCodes& dims) const = 0;
     virtual int GetPrecedence() const = 0;
   };
 
   struct Query {
-    Store& store;
+    Table& table;
     Records& records;
     const Filter* filter;
 
-    Query(Store& store, Records& records, const Filter* filter):
-      store(store),records(records),filter(filter) {}
+    Query(Table& table, Records& records, const Filter* filter):
+      table(table),records(records),filter(filter) {}
 
     virtual ~Query() {
       delete filter;
@@ -61,10 +61,10 @@ struct QueryEngine: BaseQueryEngine {
   };
 
   struct GroupByQuery: Query {
-    Materializer<Store>* materializer;
+    Materializer<Table>* materializer;
 
-    GroupByQuery(Store& store, json& query_spec, Records& records, Filter* filter):
-      materializer(Materializer<Store>::Create(store, query_spec)),Query(store, records, filter) {}
+    GroupByQuery(Table& table, json& query_spec, Records& records, Filter* filter):
+      materializer(Materializer<Table>::Create(table, query_spec)),Query(table, records, filter) {}
 
     ~GroupByQuery() {
       delete materializer;
@@ -83,7 +83,7 @@ struct QueryEngine: BaseQueryEngine {
       for (uint8_t d = 0; d < DIMS_COUNT; ++d) {
         const DimCodeType& watermark_value = Query::filter->watermark_vals[d];
         if (watermark_value > 0) {
-          watermark_offsets.push_back(Query::store.watermarks[d].GetOffset(watermark_value));
+          watermark_offsets.push_back(Query::table.watermarks[d].GetOffset(watermark_value));
         }
       }
       if (!watermark_offsets.empty()) {
@@ -118,11 +118,11 @@ struct QueryEngine: BaseQueryEngine {
     uint8_t dim_index;
     DimCodeType value_code;
 
-    EqualsFilter(Store &store, const uint8_t& dim_index, const std::string& value)
-      :Filter(store),dim_index(dim_index) {
-      value_code = store.dict.GetCode(dim_index, value);
+    EqualsFilter(Table &table, const uint8_t& dim_index, const std::string& value)
+      :Filter(table),dim_index(dim_index) {
+      value_code = table.dict.GetCode(dim_index, value);
 
-      if (store.spec.GetWatermarkStep(dim_index) > 0) {
+      if (table.spec.GetWatermarkStep(dim_index) > 0) {
         Filter::watermark_vals[dim_index] = value_code;
       }
     }
@@ -142,15 +142,15 @@ struct QueryEngine: BaseQueryEngine {
     uint8_t dim_index;
     std::unordered_set<DimCodeType> value_codes;
 
-    InFilter(Store &store, const uint8_t& dim_index, const std::vector<std::string>& values)
-      :Filter(store),dim_index(dim_index) {
+    InFilter(Table &table, const uint8_t& dim_index, const std::vector<std::string>& values)
+      :Filter(table),dim_index(dim_index) {
 
       for (auto & value : values) {
-        DimCodeType value_code = store.dict.GetCode(dim_index, value);
+        DimCodeType value_code = table.dict.GetCode(dim_index, value);
         value_codes.insert(value_code);
       }
 
-      if (store.spec.GetWatermarkStep(dim_index) > 0) {
+      if (table.spec.GetWatermarkStep(dim_index) > 0) {
         Filter::watermark_vals[dim_index] = *std::min_element(value_codes.begin(), value_codes.end());
       }
     }
@@ -170,11 +170,11 @@ struct QueryEngine: BaseQueryEngine {
     uint8_t dim_index;
     DimCodeType value_code;
 
-    GreaterThanFilter(Store &store, uint8_t dim_index, const std::string& value)
-      :Filter(store),dim_index(dim_index) {
-      store.dict.Encode(dim_index, value, value_code);
+    GreaterThanFilter(Table &table, uint8_t dim_index, const std::string& value)
+      :Filter(table),dim_index(dim_index) {
+      table.dict.Encode(dim_index, value, value_code);
 
-      if (store.spec.GetWatermarkStep(dim_index) > 0) {
+      if (table.spec.GetWatermarkStep(dim_index) > 0) {
         Filter::watermark_vals[dim_index] = value_code;
       }
     }
@@ -194,9 +194,9 @@ struct QueryEngine: BaseQueryEngine {
     uint8_t dim_index;
     DimCodeType value_code;
 
-    LessThanFilter(Store &store, uint8_t dim_index, const std::string& value)
-      :Filter(store),dim_index(dim_index) {
-      store.dict.Encode(dim_index, value, value_code);
+    LessThanFilter(Table &table, uint8_t dim_index, const std::string& value)
+      :Filter(table),dim_index(dim_index) {
+      table.dict.Encode(dim_index, value, value_code);
     }
 
     ~LessThanFilter() {}
@@ -216,8 +216,8 @@ struct QueryEngine: BaseQueryEngine {
     Op operation;
     const std::vector<Filter*> filters;
 
-    LogicalFilter(Store &store, Op operation, const std::vector<Filter*>& filters)
-      :Filter(store),operation(operation),filters(filters) {
+    LogicalFilter(Table &table, Op operation, const std::vector<Filter*>& filters)
+      :Filter(table),operation(operation),filters(filters) {
       
       for (uint8_t i = 0; i < DIMS_COUNT; ++i) {
         std::vector<DimCodeType> watermark_vals;
@@ -264,8 +264,8 @@ struct QueryEngine: BaseQueryEngine {
   struct NotFilter: Filter {
     const Filter* filter;
 
-    NotFilter(Store &store, const Filter* filter)
-      :Filter(store),filter(filter) {
+    NotFilter(Table &table, const Filter* filter)
+      :Filter(table),filter(filter) {
     }
     
     ~NotFilter() {
@@ -282,9 +282,9 @@ struct QueryEngine: BaseQueryEngine {
   };
 
   struct FilterBuilder {
-    Store &store;
+    Table &table;
 
-    FilterBuilder(Store &store): store(store) {}
+    FilterBuilder(Table &table): table(table) {}
 
     Filter* Build(json& filter_spec) {
       std::string op = filter_spec["operator"];
@@ -296,27 +296,27 @@ struct QueryEngine: BaseQueryEngine {
         sort(filters.begin(), filters.end(), [] (const Filter* a, const Filter* b) -> bool { 
           return a->GetPrecedence() < b->GetPrecedence();
         });
-        return new LogicalFilter(store,
+        return new LogicalFilter(table,
             op == "and" ? LogicalFilter::Op::And : LogicalFilter::Op::Or, filters);
       }
       if (op == "not") {
-        return new NotFilter(store, Build(filter_spec["filter"]));
+        return new NotFilter(table, Build(filter_spec["filter"]));
       }
       if (op == "equals") {
         std::string column = filter_spec["column"];
-        return new EqualsFilter(store, store.spec.GetDimIndex(column), filter_spec["value"]);
+        return new EqualsFilter(table, table.spec.GetDimIndex(column), filter_spec["value"]);
       }
       if (op == "greater") {
         std::string column = filter_spec["column"];
-        return new GreaterThanFilter(store, store.spec.GetDimIndex(column), filter_spec["value"]);
+        return new GreaterThanFilter(table, table.spec.GetDimIndex(column), filter_spec["value"]);
       }
       if (op == "less") {
         std::string column = filter_spec["column"];
-        return new LessThanFilter(store, store.spec.GetDimIndex(column), filter_spec["value"]);
+        return new LessThanFilter(table, table.spec.GetDimIndex(column), filter_spec["value"]);
       }
       if (op == "in") {
         std::string column = filter_spec["column"];
-        return new InFilter(store, store.spec.GetDimIndex(column),
+        return new InFilter(table, table.spec.GetDimIndex(column),
             filter_spec["values"].get<std::vector<std::string>>());
       }
       throw std::invalid_argument("Unknown filter operation: " + op);
@@ -324,27 +324,27 @@ struct QueryEngine: BaseQueryEngine {
   };
 
   struct QueryBuilder {
-    Store &store;
+    Table &table;
     Records& records;
 
-    QueryBuilder(Store &store, Records& records): store(store),records(records) {}
+    QueryBuilder(Table &table, Records& records): table(table),records(records) {}
 
     Query* Build(json& query_spec) {
       if (query_spec.find("filter") == query_spec.end()) {
         throw std::invalid_argument("Filter must be specified");
       }
-      FilterBuilder filter_builder(store);
+      FilterBuilder filter_builder(table);
       Filter* filter = filter_builder.Build(query_spec["filter"]);
       std::string type = query_spec["type"];
       if (type == "groupBy") {
-        return new GroupByQuery(store, query_spec, records, filter);
+        return new GroupByQuery(table, query_spec, records, filter);
       }
       throw std::invalid_argument("Unknown query type: " + type);
     }
   };
 
   void RunQuery(json& query_spec, Result& result) {
-    QueryBuilder builder(store, records);
+    QueryBuilder builder(table, records);
     Query* query = builder.Build(query_spec);
     query->Run(result);
     delete query;

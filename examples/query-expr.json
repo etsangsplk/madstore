@@ -1,4 +1,5 @@
 {
+  "table": "edits",
   "type": "groupBy",
   "select": [
     {"name": "year", "expr": "\"20\" .. string.sub(edit_time, 0, 2)", "fields": ["edit_time"]},

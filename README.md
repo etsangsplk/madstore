@@ -40,32 +40,37 @@ To run the madstore, pass store specification file as the only argument:
 
      ~$ madstore store.json
 
-Store specification JSON file defines dimensions and metrics that this instance can store. For example:
+Store specification JSON file defines tables along with their dimensions and metrics. For example:
 
 ```javascript
 {
-  "dimensions": [
-    {"name": "edit_time", "type": "integer", "watermark_step": 730},
-    {"name": "editor_name"},
-    {"name": "article_url"},
-    {"name": "article_title"},
-    {"name": "language"},
-    {"name": "user_agent"},
-    {"name": "country"},
-    {"name": "city"}
-  ],
-  "metrics": [
-    {"name": "count"},
-    {"name": "lines_changed"},
-    {"name": "time_spent"}
-  ],
+  "tables": {
+    "edits": {
+      "dimensions": [
+        {"name": "edit_time", "type": "integer", "watermark_step": 730},
+        {"name": "editor_name"},
+        {"name": "article_url"},
+        {"name": "article_title"},
+        {"name": "language"},
+        {"name": "user_agent"},
+        {"name": "country"},
+        {"name": "city"}
+      ],
+      "metrics": [
+        {"name": "count"},
+        {"name": "lines_changed"},
+        {"name": "time_spent"}
+      ]
+    }
+  },
   "port": 5555
 }
 ```
 
 Explanation:
 
-* `port` is a REST API port number
+* Table names are defined as keys under `tables` map.
+* `port` is a REST API port number.
 * `watermark_step` can be used bucketing records based on semi-oredered time series columns.
 
 <a name="restapi">
@@ -78,11 +83,12 @@ Loading data can be done using POST request to the `/api/load` endpoint. Example
 
      ~$ curl -v -X POST -d@input.json http://localhost:5555/api/load
 
-Input specification JSON file contains source information as well as column names defined in the source. For example:
+Input specification JSON file contains source information as well as table column names defined in the source. For example:
 
 ```javascript
 {
   "file": "data.tsv",
+  "table": "edits",
   "columns": [
     "edit_time",
     "editor_name",
@@ -113,6 +119,7 @@ Query specification JSON file contains the query itself in a very intuitive form
 
 ```javascript
 {
+  "table": "edits",
   "type": "groupBy",
   "columns": ["edit_time", "country"],
   "filter": {
@@ -129,6 +136,7 @@ It's possible to use Lua expressions when selecting columns. For example:
 
 ```javascript
 {
+  "table": "edits",
   "type": "groupBy",
   "select": [
     {"name": "year", "expr": "\"20\" .. string.sub(edit_time, 0, 2)", "fields": ["edit_time"]},
@@ -183,15 +191,15 @@ To build the binary, run:
 
 <a name="configure">
 #### Configuration options
-Option               | Description
--------------------- | ------------
---enable-persistence | Persist data to disk. For now, persisting dictionaries must be invoked explicitly using `/api/persist` POST request.
---enable-expressions | Allow using Lua scripts for query post-processing.
---with-dims=NUM      | Number of dimensions this store supports (default: 10).
---with-metrics=NUM   | Number of metrics this store supports (default: 5).
+Option                   | Description
+------------------------ | ------------
+--enable-persistence     | Persist data to disk. For now, persisting dictionaries must be invoked explicitly using `/api/persist` POST request.
+--enable-expressions     | Allow using Lua scripts for query post-processing.
+--with-tables=DxM,...    | Supported tables in terms of dimensions (D) and metrics (M) number. Default is: one table of size 10x5.
 
-Number of supported dimensions and metrics is configured in compile time for performance reasons. To change defaults, use
-`--with-dims` and `--with-metrics` configuration options respectively.
+Supported table sizes are calculated in compile time for performance reasons. To support more tables or change default table size
+(which is: 10 dimensions and 5 metrics), use configuration option: `--with-tables`. For example, to support two tables of sizes: 5x3 and 12x7
+you have to pass `--with-tables=5x3,12x7` as the configuration option.
 
 
 <a name="testing">

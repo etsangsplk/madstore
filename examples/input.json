@@ -1,4 +1,5 @@
 {
+  "table": "edits",
   "file": "data.tsv",
   "columns": [
     "edit_time",

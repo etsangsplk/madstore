@@ -7,7 +7,7 @@
 #include <unordered_set>
 #include "easylogging++.h"
 #include "json.hpp"
-#include "store.h"
+#include "table.h"
 
 #ifdef EXPRESSIONS
 # include "lua.h"
@@ -15,15 +15,15 @@
 
 using json = nlohmann::json;
 
-template<typename Store>
+template<typename Table>
 struct ColumnsMaterializer;
 
-template<typename Store>
+template<typename Table>
 struct SelectMaterializer;
 
-template<typename Store>
+template<typename Table>
 struct Materializer {
-  using Metrics = typename Store::Metrics;
+  using Metrics = typename Table::Metrics;
   using Result = std::vector<std::pair<std::vector<std::string>,Metrics>>;
   using GroupedMetrics = IterablesMap<std::vector<DimCodeType>,Metrics>;
 
@@ -38,42 +38,42 @@ struct Materializer {
     return column_indices;
   }
 
-  static Materializer* Create(Store& store, json& query_spec) {
+  static Materializer* Create(Table& table, json& query_spec) {
     if (query_spec.find("columns") != query_spec.end()) {
       std::vector<std::string> columns = query_spec["columns"].get<std::vector<std::string>>();
-      return new ColumnsMaterializer<Store>(store, columns);
+      return new ColumnsMaterializer<Table>(table, columns);
     }
     if (query_spec.find("select") != query_spec.end()) {
 #ifdef EXPRESSIONS
-      return new SelectMaterializer<Store>(store, query_spec["select"]);
+      return new SelectMaterializer<Table>(table, query_spec["select"]);
 #else
-      throw std::invalid_argument("Select expressions are not supported");
+      throw std::invalid_argument("Expressions are not supported. To enable use --enable-expressions option.");
 #endif
     }
     throw std::invalid_argument("Missing either 'columns' or 'select' section");
   }
 };
 
-template<typename Store>
-struct ColumnsMaterializer: Materializer<Store> {
+template<typename Table>
+struct ColumnsMaterializer: Materializer<Table> {
 
-  Store& store;
+  Table& table;
   std::vector<std::string> columns;
 
-  ColumnsMaterializer(Store& store, std::vector<std::string>& columns):store(store),columns(columns) {
-    store.spec.GetDimIndices(columns, Materializer<Store>::column_indices);
+  ColumnsMaterializer(Table& table, std::vector<std::string>& columns):table(table),columns(columns) {
+    table.spec.GetDimIndices(columns, Materializer<Table>::column_indices);
   }
 
-  void Materialize(typename Materializer<Store>::GroupedMetrics& grouped_metrics, typename Materializer<Store>::Result& result) {
+  void Materialize(typename Materializer<Table>::GroupedMetrics& grouped_metrics, typename Materializer<Table>::Result& result) {
     TIMED_SCOPE(timerObj, "materializing results");
 
-    auto dims_count = Materializer<Store>::column_indices.size();
+    auto dims_count = Materializer<Table>::column_indices.size();
     for (const auto & r : grouped_metrics) {
       std::vector<std::string> v(dims_count);
       for (int i = 0; i < dims_count; ++i) {
-        store.dict.Decode(Materializer<Store>::column_indices[i], r.first[i], v[i]);
+        table.dict.Decode(Materializer<Table>::column_indices[i], r.first[i], v[i]);
       }
-      result.push_back(std::pair<std::vector<std::string>,typename Store::Metrics>(v, r.second));
+      result.push_back(std::pair<std::vector<std::string>,typename Table::Metrics>(v, r.second));
     }
   }
 
@@ -83,15 +83,15 @@ struct ColumnsMaterializer: Materializer<Store> {
 };
 
 #ifdef EXPRESSIONS
-template<typename Store>
-struct SelectMaterializer: Materializer<Store> {
+template<typename Table>
+struct SelectMaterializer: Materializer<Table> {
 
-  Store& store;
+  Table& table;
   std::vector<std::string> output_columns;
   std::vector<const LuaFunction*> functions;
   std::vector<std::vector<uint8_t>> arg_indices;
 
-  SelectMaterializer(Store& store, json& select):store(store),functions(select.size(), nullptr) {
+  SelectMaterializer(Table& table, json& select):table(table),functions(select.size(), nullptr) {
     output_columns.reserve(select.size());
     arg_indices.resize(select.size());
 
@@ -117,7 +117,7 @@ struct SelectMaterializer: Materializer<Store> {
     }
 
     std::vector<std::string> select_columns(columns_set.begin(), columns_set.end());
-    store.spec.GetDimIndices(select_columns, Materializer<Store>::column_indices);
+    table.spec.GetDimIndices(select_columns, Materializer<Table>::column_indices);
 
     for (uint8_t func_idx = 0; func_idx < arg_names.size(); ++func_idx) {
       auto args = arg_names[func_idx];
@@ -132,19 +132,19 @@ struct SelectMaterializer: Materializer<Store> {
     }
   }
 
-  void Materialize(typename Materializer<Store>::GroupedMetrics& grouped_metrics, typename Materializer<Store>::Result& result) {
+  void Materialize(typename Materializer<Table>::GroupedMetrics& grouped_metrics, typename Materializer<Table>::Result& result) {
     TIMED_SCOPE(timerObj, "materializing results");
 
     auto columns_num = output_columns.size();
-    auto select_columns_num = Materializer<Store>::column_indices.size();
+    auto select_columns_num = Materializer<Table>::column_indices.size();
 
-    std::map<std::vector<std::string>, typename Store::Metrics> post_agg;
+    std::map<std::vector<std::string>, typename Table::Metrics> post_agg;
     for (const auto & r : grouped_metrics) {
       auto& dim_codes = r.first;
 
       std::vector<std::string> values(select_columns_num);
       for (int column_idx = 0; column_idx < select_columns_num; ++column_idx) {
-        store.dict.Decode(Materializer<Store>::column_indices[column_idx], dim_codes[column_idx], values[column_idx]);
+        table.dict.Decode(Materializer<Table>::column_indices[column_idx], dim_codes[column_idx], values[column_idx]);
       }
 
       std::vector<std::string> translated(columns_num);
@@ -166,7 +166,7 @@ struct SelectMaterializer: Materializer<Store> {
     }
 
     for (auto it = post_agg.begin(); it != post_agg.end(); ++it) {
-      result.push_back(std::pair<std::vector<std::string>,typename Store::Metrics>(it->first, it->second));
+      result.push_back(std::pair<std::vector<std::string>,typename Table::Metrics>(it->first, it->second));
     }
   }
 

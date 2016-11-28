@@ -1,4 +1,5 @@
 {
+  "table": "edits",
   "type": "groupBy",
   "columns": ["edit_time", "country"],
   "filter": {

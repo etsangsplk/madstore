@@ -49,9 +49,6 @@ void RestAPI::Start() {
           json spec = json::parse(request->content.string());
           InputSpec input_spec(spec);
           store.Read(input_spec);
-#ifdef PERSIST
-          store.Persist();
-#endif
           *response<<"HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n";
         } catch (std::exception& e) {
           *response<<"HTTP/1.1 400 Bad Request\r\nContent-Length: "<<strlen(e.what())<<"\r\n\r\n"<<e.what();
