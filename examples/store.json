@@ -2,7 +2,7 @@
   "tables": {
     "edits": {
       "dimensions": [
-        {"name": "edit_time", "type": "integer", "watermark_step": 7},
+        {"name": "edit_time", "type": "integer", "watermark_step": 730},
         {"name": "editor_name"},
         {"name": "article_url"},
         {"name": "article_title"},
