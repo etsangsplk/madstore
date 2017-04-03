@@ -17,7 +17,7 @@ In-memory data store for dimensions and metrics.
      * [Configuration options](#configure)
    * [Testing](#testing)
 
-<a name="features">
+<a name="features"></a>
 ## Features
 
  * REST API interface.
@@ -25,15 +25,15 @@ In-memory data store for dimensions and metrics.
  * Persistence to disk using memory mapped files.
  * Lua scripting for post-aggregation.
 
-<a name="how">
+<a name="how"></a>
 ## How it works?
 
 The implementation is naive, though using mechanical sympathy can provide good query results in some cases.
 
-<a name="usage">
+<a name="usage"></a>
 ## Usage
 
-<a name="running">
+<a name="running"></a>
 ### Running
 
 To run the madstore, pass store specification file as the only argument:
@@ -73,10 +73,10 @@ Explanation:
 * `port` is a REST API port number.
 * `watermark_step` can be used bucketing records based on semi-oredered time series columns.
 
-<a name="restapi">
+<a name="restapi"></a>
 ### REST API
 
-<a name="loading">
+<a name="loading"></a>
 #### Loading Data
 
 Loading data can be done using POST request to the `/api/load` endpoint. Example:
@@ -108,7 +108,7 @@ Input specification JSON file contains source information as well as table colum
 
 * For now only TSV format is supported.
 
-<a name="querying">
+<a name="querying"></a>
 #### Querying Data
 
 Querying data can be done using POST request to the `/api/query` endpoint. Example:
@@ -157,7 +157,7 @@ In the example above, new field called `year` is added, and it's computed using 
 
 Lua functions are compiled using JIT compiler, and cached after running a query for the first time, so invocation becomes faster starting from running it again for the second time.
 
-<a name="stats">
+<a name="stats"></a>
 #### Getting Statistics
 
 To get store statistics, issue a GET query to the `/api/stats` endpoint, like this:
@@ -166,7 +166,7 @@ To get store statistics, issue a GET query to the `/api/stats` endpoint, like th
      
 The result will be returned in JSON format.
 
-<a name="building">
+<a name="building"></a>
 ### Building
 
 You must have the following prerequisites:
@@ -189,7 +189,7 @@ To build the binary, run:
       ~$ ./configure
       ~$ make -j 4
 
-<a name="configure">
+<a name="configure"></a>
 #### Configuration options
 Option                   | Description
 ------------------------ | ------------
@@ -202,7 +202,7 @@ Supported table sizes are calculated in compile time for performance reasons. To
 you have to pass `--with-tables=5x3,12x7` as the configuration option.
 
 
-<a name="testing">
+<a name="testing"></a>
 ### Testing
 
 See [Examples](examples/README.md) section.
